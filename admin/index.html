@@ -10,72 +10,90 @@
   <link rel="stylesheet" href="admin.css">
 </head>
 <body>
-  <header>
+  <header class="topbar">
     <a href="../" aria-label="Volver a SAM"><img src="../assets/logo.svg" alt="SAM" width="150" height="72"></a>
-    <a class="back" href="../">Ver web pública <span aria-hidden="true">→</span></a>
+    <div class="topbar-actions">
+      <span id="session-user" hidden></span>
+      <button id="logout-button" class="text-button" type="button" hidden>Cerrar sesión</button>
+      <a class="back" href="../">Ver tienda <span aria-hidden="true">→</span></a>
+    </div>
   </header>
 
   <main>
-    <section class="admin-hero">
-      <div>
-        <p>Área de administración</p>
-        <h1>La gestión de SAM,<br>preparada para crecer.</h1>
-        <p class="lead">La base ya incluye catálogo, variantes, precios, stock, imágenes y permisos. El siguiente paso es conectar el inicio de sesión y los formularios de gestión.</p>
+    <section id="login-view" class="login-shell">
+      <div class="login-copy">
+        <p class="eyebrow">Área privada</p>
+        <h1>Gestiona SAM<br>sin tocar código.</h1>
+        <p>Accede con la cuenta autorizada de Supabase para editar el catálogo, precios, visibilidad y stock.</p>
       </div>
-      <span class="status">Núcleo de datos preparado</span>
+      <form id="login-form" class="panel login-card">
+        <h2>Iniciar sesión</h2>
+        <label>Correo electrónico<input id="login-email" type="email" autocomplete="username" required></label>
+        <label>Contraseña<input id="login-password" type="password" autocomplete="current-password" required minlength="6"></label>
+        <button class="primary-button" type="submit">Entrar al panel</button>
+        <p id="login-status" class="form-status" role="status"></p>
+      </form>
     </section>
 
-    <section class="notice">
-      <span>i</span>
-      <div>
-        <strong>El acceso administrativo aún no está activado.</strong>
-        <p>Las políticas RLS ya están preparadas. Los formularios aparecerán cuando configuremos el proyecto de Supabase y la cuenta propietaria.</p>
+    <section id="dashboard-view" hidden>
+      <div class="dashboard-heading">
+        <div><p class="eyebrow">Panel de administración</p><h1>Catálogo de SAM</h1><p id="role-label" class="muted"></p></div>
+        <button id="new-product-button" class="primary-button" type="button">+ Nuevo producto</button>
       </div>
-    </section>
-
-    <section class="modules" aria-label="Módulos previstos">
-      <article>
-        <div class="icon icon--pink">▦</div>
-        <span>Catálogo</span>
-        <h2>Productos y servicios</h2>
-        <p>Nombre, descripción, categoría, estado, visibilidad y orden.</p>
-        <b>Modelo preparado</b>
-      </article>
-      <article>
-        <div class="icon icon--cyan">◇</div>
-        <span>Opciones</span>
-        <h2>Variantes y precios</h2>
-        <p>Formatos, colores, acabados, SKU, precio y disponibilidad.</p>
-        <b>Modelo preparado</b>
-      </article>
-      <article>
-        <div class="icon icon--yellow">▤</div>
-        <span>Inventario</span>
-        <h2>Stock y movimientos</h2>
-        <p>Existencias, ajustes, reservas y un histórico de cambios.</p>
-        <b>Modelo preparado</b>
-      </article>
-      <article>
-        <div class="icon icon--violet">◫</div>
-        <span>Multimedia</span>
-        <h2>Imágenes y archivos</h2>
-        <p>Galerías públicas y documentos privados organizados por producto.</p>
-        <b>Storage preparado</b>
-      </article>
-    </section>
-
-    <section class="roadmap">
-      <div>
-        <p>Siguiente fase</p>
-        <h2>Qué falta para activar la gestión</h2>
-      </div>
-      <ol>
-        <li><span>1</span>Crear el proyecto de Supabase</li>
-        <li><span>2</span>Aplicar la migración y los datos iniciales</li>
-        <li><span>3</span>Configurar la cuenta propietaria</li>
-        <li><span>4</span>Activar login y formularios CRUD</li>
-      </ol>
+      <section class="stats" aria-label="Resumen del catálogo">
+        <article><span>Productos</span><strong id="stat-total">0</strong></article>
+        <article><span>Publicados</span><strong id="stat-published">0</strong></article>
+        <article><span>Borradores</span><strong id="stat-drafts">0</strong></article>
+        <article><span>Con stock bajo</span><strong id="stat-low-stock">0</strong></article>
+      </section>
+      <section class="panel catalog-panel">
+        <div class="toolbar">
+          <label><span class="sr-only">Buscar productos</span><input id="product-search" type="search" placeholder="Buscar por nombre o SKU…"></label>
+          <select id="status-filter" aria-label="Filtrar por estado">
+            <option value="all">Todos los estados</option><option value="published">Publicados</option>
+            <option value="draft">Borradores</option><option value="hidden">Ocultos</option><option value="archived">Archivados</option>
+          </select>
+        </div>
+        <div id="loading-state" class="loading-state">Cargando catálogo…</div>
+        <div id="product-list" class="product-list"></div>
+        <p id="empty-state" class="empty-state" hidden>No hay productos que coincidan con el filtro.</p>
+        <p id="dashboard-status" class="form-status" role="status"></p>
+      </section>
     </section>
   </main>
+
+  <dialog id="product-dialog">
+    <form id="product-form" class="product-form">
+      <div class="dialog-heading">
+        <div><p class="eyebrow">Catálogo</p><h2 id="dialog-title">Nuevo producto</h2></div>
+        <button id="close-dialog-button" class="close-button" type="button" aria-label="Cerrar">×</button>
+      </div>
+      <input id="product-id" type="hidden"><input id="variant-id" type="hidden">
+      <div class="form-grid">
+        <label class="field-wide">Nombre<input id="product-name" type="text" required maxlength="120"></label>
+        <label>Slug<input id="product-slug" type="text" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*"></label>
+        <label>Categoría<select id="product-category" required></select></label>
+        <label class="field-wide">Descripción corta<textarea id="product-description" rows="3" maxlength="280"></textarea></label>
+        <label>Tipo<select id="product-kind"><option value="physical">Artículo físico</option><option value="service">Servicio</option><option value="digital">Servicio digital</option></select></label>
+        <label>Entrega<select id="product-fulfillment"><option value="pickup">Recogida</option><option value="digital_delivery">Entrega digital</option><option value="both">Ambas</option></select></label>
+        <label>Estado<select id="product-status"><option value="published">Publicado</option><option value="draft">Borrador</option><option value="hidden">Oculto</option><option value="archived">Archivado</option></select></label>
+        <label>Precio (€)<input id="variant-price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Vacío si requiere presupuesto"></label>
+        <label>Nombre de la variante<input id="variant-name" type="text" value="Estándar" required maxlength="100"></label>
+        <label>SKU<input id="variant-sku" type="text" maxlength="80" placeholder="SAM-XXX-001"></label>
+        <label class="check-field"><input id="requires-quote" type="checkbox"> Requiere presupuesto</label>
+        <label class="check-field"><input id="track-inventory" type="checkbox"> Controlar stock</label>
+        <label>Stock actual<input id="stock-quantity" type="number" step="1" value="0"></label>
+        <label class="check-field"><input id="product-featured" type="checkbox"> Producto destacado</label>
+      </div>
+      <div class="dialog-actions">
+        <button id="delete-product-button" class="danger-button" type="button" hidden>Eliminar</button><span class="action-spacer"></span>
+        <button id="cancel-product-button" class="secondary-button" type="button">Cancelar</button>
+        <button class="primary-button" type="submit">Guardar cambios</button>
+      </div>
+      <p id="product-form-status" class="form-status" role="status"></p>
+    </form>
+  </dialog>
+  <script src="../sam-settings.js"></script>
+  <script src="admin.js"></script>
 </body>
 </html>
