@@ -7,7 +7,7 @@ create type public.project_role as enum ('owner', 'admin', 'editor', 'viewer');
 create type public.project_status as enum ('draft', 'active', 'archived');
 create type public.product_status as enum ('draft', 'published', 'hidden', 'archived');
 create type public.product_kind as enum ('physical', 'service', 'digital');
-create type public.fulfillment_mode as enum ('pickup', 'digital_delivery', 'both');
+create type public.fulfillment_mode as enum ('home_delivery', 'email_delivery');
 create type public.inventory_movement_type as enum ('initial', 'purchase', 'sale', 'adjustment', 'return', 'damage');
 create type public.file_visibility as enum ('public', 'private');
 
@@ -68,7 +68,7 @@ create table public.catalog_products (
   short_description text,
   description text,
   kind public.product_kind not null default 'physical',
-  fulfillment public.fulfillment_mode not null default 'pickup',
+  fulfillment public.fulfillment_mode not null default 'home_delivery',
   status public.product_status not null default 'draft',
   featured boolean not null default false,
   requires_quote boolean not null default true,

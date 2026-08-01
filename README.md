@@ -24,11 +24,12 @@ Todas las rutas son relativas para funcionar correctamente bajo `/Sam/`.
 
 1. Crea un proyecto vacío en Supabase.
 2. Ejecuta `supabase/migrations/202608010001_sam_core.sql` en el SQL Editor.
-3. Ejecuta `supabase/seed.sql`.
-4. Copia la URL del proyecto y la clave publicable en `sam-settings.js`.
-5. Crea el primer usuario en Authentication.
-6. Ejecuta `supabase/owner-setup.sql`, sustituyendo `TU_CORREO_AQUI` por el correo del usuario.
-7. Inicia sesión en `/admin/`.
+3. Ejecuta las demás migraciones, en orden, si las hubiera.
+4. Ejecuta `supabase/seed.sql`.
+5. Copia la URL del proyecto y la clave publicable en `sam-settings.js`.
+6. Crea el primer usuario en Authentication.
+7. Ejecuta `supabase/owner-setup.sql`, sustituyendo `TU_CORREO_AQUI` por el correo del usuario.
+8. Inicia sesión en `/admin/`.
 
 La tienda consulta Supabase mediante su API REST, permisos mínimos y RLS. Si la conexión aún no está
 configurada o falla, conserva el catálogo local de reserva.
@@ -42,6 +43,11 @@ El panel permite crear, editar, publicar, ocultar y eliminar artículos y servic
 cada entrada se puede elegir precio fijo, precio «desde» o precio a consultar. Los
 artículos físicos pueden controlar las unidades disponibles y el umbral de stock bajo;
 los servicios pueden mostrar una tarifa estándar y mantener la consulta personalizada.
+
+SAM no dispone de tienda física ni punto de recogida. `fulfillment_mode` solo admite
+`home_delivery` para envíos a domicilio y `email_delivery` para productos digitales
+enviados por correo electrónico. La migración `202608010002_delivery_only.sql` convierte
+los valores antiguos sin eliminar productos, precios, stock ni fotografías.
 
 Cada producto admite hasta ocho fotos desde el mismo formulario. El panel optimiza las
 imágenes, las sube al bucket público `sam-public`, permite elegir la portada, cambiar el

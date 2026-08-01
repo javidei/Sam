@@ -12,9 +12,9 @@
   <meta property="og:url" content="https://javidei.github.io/Sam/">
   <link rel="canonical" href="https://javidei.github.io/Sam/">
   <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=sam-github-6">
-  <script src="sam-settings.js?v=sam-github-6" defer></script>
-  <script src="app.js?v=sam-github-6" defer></script>
+  <link rel="stylesheet" href="styles.css?v=sam-github-7">
+  <script src="sam-settings.js?v=sam-github-7" defer></script>
+  <script src="app.js?v=sam-github-7" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#contenido">Saltar al contenido</a>
@@ -132,7 +132,7 @@
           <p class="section-kicker">Catálogo SAM</p>
           <h2 id="catalog-title">Busca por servicio<br>o por tipo de encargo.</h2>
         </div>
-        <p>Los artículos muestran su precio y las unidades disponibles. Los servicios pueden tener una tarifa estándar, un precio desde o solicitar presupuesto.</p>
+        <p>Los artículos muestran su precio y las unidades disponibles. Todo producto físico se envía a domicilio y los productos digitales se entregan por correo electrónico; SAM no dispone de punto de recogida.</p>
       </div>
 
       <div class="catalog-toolbar reveal">
@@ -155,6 +155,7 @@
       <div class="catalog-legend" role="note" aria-label="Información del catálogo">
         <span><i class="legend-dot legend-dot--stock"></i> Stock visible en artículos</span>
         <span><i class="legend-dot legend-dot--price"></i> Precio fijo, desde o a consultar</span>
+        <span><i class="legend-dot legend-dot--delivery"></i> Envío a domicilio o entrega por correo</span>
         <span><i class="legend-dot legend-dot--contact"></i> Consulta directa para trabajos a medida</span>
       </div>
 
@@ -257,7 +258,7 @@
         <li class="reveal"><span>01</span><div><h3>Cuéntanos qué necesitas</h3><p>Tipo de trabajo, cantidad, medidas, fecha y cualquier referencia que tengas.</p></div></li>
         <li class="reveal"><span>02</span><div><h3>Revisamos y presupuestamos</h3><p>Te indicamos opciones, material, tiempos y coste antes de comenzar.</p></div></li>
         <li class="reveal"><span>03</span><div><h3>Diseñamos y confirmas</h3><p>Cuando el trabajo lo requiera, verás una propuesta antes de producirlo.</p></div></li>
-        <li class="reveal"><span>04</span><div><h3>Recibes tu encargo</h3><p>En formato físico o digital según el servicio elegido.</p></div></li>
+        <li class="reveal"><span>04</span><div><h3>Recibes tu encargo</h3><p>Si es físico, lo enviamos a tu domicilio; si es digital, lo recibes por correo electrónico.</p></div></li>
       </ol>
     </section>
 
@@ -272,7 +273,7 @@
         <li>Productos y variantes</li>
         <li>Stock por opción</li>
         <li>Pedidos y pagos</li>
-        <li>Recogida o envío</li>
+        <li>Envío a domicilio y entrega digital</li>
       </ul>
     </section>
 
@@ -301,7 +302,7 @@
         </label>
         <label>
           Cuéntanos tu idea
-          <textarea id="brief-detail" rows="5" placeholder="Qué necesitas, cantidad aproximada, medidas y para cuándo..." required></textarea>
+          <textarea id="brief-detail" rows="5" placeholder="Qué necesitas, cantidad aproximada, medidas, código postal y para cuándo..." required></textarea>
         </label>
         <button class="button button--dark" id="contact-submit" type="submit">Preparar solicitud</button>
         <p class="form-status" id="form-status" aria-live="polite"></p>

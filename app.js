@@ -96,7 +96,8 @@ function bindServiceLinks(scope = document) {
 
       if (briefDetail && !briefDetail.value) {
         const price = link.dataset.price ? ` (${link.dataset.price})` : '';
-        briefDetail.value = `Me interesa: ${link.dataset.service}${price}. `;
+        const fulfillment = link.dataset.fulfillment ? ` Entrega: ${link.dataset.fulfillment}.` : '';
+        briefDetail.value = `Me interesa: ${link.dataset.service}${price}.${fulfillment} `;
       }
     });
   });
@@ -147,7 +148,7 @@ function getPriceInfo(product) {
 }
 
 function getAvailability(product) {
-  if (product.kind === 'digital') return { text: 'Entrega digital', state: 'digital', quantity: null };
+  if (product.kind === 'digital') return { text: 'Disponible por correo', state: 'digital', quantity: null };
   if (product.kind === 'service') {
     return { text: product.requires_quote ? 'Servicio personalizable' : 'Servicio disponible', state: 'order', quantity: null };
   }
@@ -162,6 +163,17 @@ function getAvailability(product) {
     return { text: `Últimas ${quantity} ud${quantity === 1 ? '.' : 's.'}`, state: 'low', quantity };
   }
   return { text: `${quantity} ud${quantity === 1 ? '.' : 's.'} disponibles`, state: 'available', quantity };
+}
+
+function getFulfillmentInfo(product) {
+  const emailDelivery = product.kind === 'digital'
+    || product.fulfillment === 'email_delivery'
+    || product.fulfillment === 'digital_delivery';
+
+  if (emailDelivery) {
+    return { value: 'email_delivery', text: 'Entrega digital por correo electrónico' };
+  }
+  return { value: 'home_delivery', text: 'Envío a domicilio' };
 }
 
 function getActionLabel(product, price, availability) {
@@ -389,6 +401,7 @@ function createCatalogCard(product, supabaseUrl) {
   const categories = getCategories(product);
   const price = getPriceInfo(product);
   const availabilityInfo = getAvailability(product);
+  const fulfillmentInfo = getFulfillmentInfo(product);
   const card = document.createElement('article');
   card.className = 'catalog-card reveal is-visible';
   card.dataset.category = categories.join(' ');
@@ -416,6 +429,9 @@ function createCatalogCard(product, supabaseUrl) {
   title.textContent = product.name;
   const description = document.createElement('p');
   description.textContent = product.short_description || product.description || 'Consulta las opciones disponibles.';
+  const fulfillment = document.createElement('p');
+  fulfillment.className = 'catalog-fulfillment';
+  fulfillment.textContent = fulfillmentInfo.text;
 
   const purchase = document.createElement('div');
   purchase.className = 'catalog-purchase';
@@ -423,10 +439,11 @@ function createCatalogCard(product, supabaseUrl) {
   action.href = '#contacto';
   action.dataset.service = product.name;
   action.dataset.price = `${price.label}: ${price.text}`;
+  action.dataset.fulfillment = fulfillmentInfo.text;
   action.textContent = `${getActionLabel(product, price, availabilityInfo)} →`;
   purchase.append(createPriceBlock(price), action);
 
-  copy.append(meta, title, description, purchase);
+  copy.append(meta, title, description, fulfillment, purchase);
   card.append(art, copy);
   return card;
 }
@@ -440,14 +457,20 @@ function enhanceFallbackCatalog() {
 
     if (metaStatus) {
       metaStatus.className = 'catalog-stock catalog-stock--order';
-      metaStatus.textContent = card.dataset.category?.includes('digital') ? 'Entrega digital' : 'Disponible por encargo';
+      metaStatus.textContent = card.dataset.category?.includes('digital') ? 'Disponible por correo' : 'Disponible por encargo';
     }
+    const fulfillment = document.createElement('p');
+    fulfillment.className = 'catalog-fulfillment';
+    fulfillment.textContent = card.dataset.category?.includes('digital')
+      ? 'Entrega digital por correo electrónico'
+      : 'Envío a domicilio';
     const purchase = document.createElement('div');
     purchase.className = 'catalog-purchase';
     action.dataset.price = 'Precio: A consultar';
+    action.dataset.fulfillment = fulfillment.textContent;
     action.textContent = 'Pedir presupuesto →';
     purchase.append(createPriceBlock({ label: 'Precio', text: 'A consultar' }), action);
-    copy.append(purchase);
+    copy.append(fulfillment, purchase);
   });
 }
 

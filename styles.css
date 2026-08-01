@@ -305,7 +305,7 @@ button { cursor: pointer; }
 .catalog-legend { margin: 0 0 20px; padding: 13px 16px; display: flex; flex-wrap: wrap; gap: 10px 22px; color: var(--muted); background: rgba(255,255,255,.68); border: 1px solid var(--line); border-radius: 15px; font-size: 12px; font-weight: 750; }
 .catalog-legend span { display: inline-flex; align-items: center; gap: 7px; }
 .legend-dot { width: 9px; height: 9px; display: inline-block; border-radius: 50%; }
-.legend-dot--stock { background: #36a568; }.legend-dot--price { background: var(--pink); }.legend-dot--contact { background: var(--cyan); }
+.legend-dot--stock { background: #36a568; }.legend-dot--price { background: var(--pink); }.legend-dot--delivery { background: var(--violet); }.legend-dot--contact { background: var(--cyan); }
 
 .catalog-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
 .catalog-card { min-width: 0; overflow: hidden; display: flex; flex-direction: column; background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 18px 42px rgba(49,43,46,.08); }
@@ -327,6 +327,8 @@ button { cursor: pointer; }
 .catalog-copy > div:first-child b { color: var(--muted); }
 .catalog-copy h3 { margin: 12px 0 8px; font-size: 26px; line-height: 1.15; letter-spacing: -.03em; }
 .catalog-copy p { min-height: 48px; margin: 0 0 18px; color: var(--muted); font-size: 14px; }
+.catalog-copy .catalog-fulfillment { min-height: 0; margin: -5px 0 16px; display: flex; align-items: center; gap: 7px; color: #6147af; font-size: 12px; font-weight: 850; }
+.catalog-fulfillment::before { content: "→"; font-size: 14px; }
 .catalog-purchase { margin-top: auto; padding-top: 17px; display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; border-top: 1px solid var(--line); }
 .catalog-price { display: block; font-size: 21px; line-height: 1; letter-spacing: -.025em; }
 .catalog-price small { margin-bottom: 5px; display: block; color: var(--muted); font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }

@@ -36,6 +36,7 @@ let currentProduct = null;
 let storefrontSetting = null;
 let imageDrafts = [];
 let removedImages = [];
+let usesLegacyFulfillment = false;
 
 const imageLimit = 8;
 const imageSizeLimit = 25 * 1024 * 1024;
@@ -318,6 +319,7 @@ async function loadCatalog() {
 
   categories = categoryRows;
   products = productRows;
+  usesLegacyFulfillment = products.some((product) => ['pickup', 'digital_delivery', 'both'].includes(product.fulfillment));
   storefrontSetting = settingRows[0] || null;
   loadingState.hidden = true;
   fillCategoryOptions();
@@ -328,6 +330,17 @@ async function loadCatalog() {
 
 function productVariant(product) {
   return [...(product.variants || [])].sort((a, b) => a.sort_order - b.sort_order)[0] || null;
+}
+
+function normalizeFulfillment(value, kind) {
+  if (value === 'email_delivery' || value === 'digital_delivery') return 'email_delivery';
+  if (value === 'home_delivery' || value === 'pickup') return 'home_delivery';
+  return kind === 'digital' ? 'email_delivery' : 'home_delivery';
+}
+
+function databaseFulfillment(value) {
+  if (!usesLegacyFulfillment) return value;
+  return value === 'email_delivery' ? 'digital_delivery' : 'pickup';
 }
 
 function getPriceMode(product) {
@@ -670,7 +683,7 @@ function resetProductForm() {
   $('#variant-id').value = '';
   $('#variant-name').value = 'Estándar';
   $('#product-kind').value = 'physical';
-  $('#product-fulfillment').value = 'pickup';
+  $('#product-fulfillment').value = 'home_delivery';
   $('#product-status').value = 'published';
   $('#price-mode').value = 'fixed';
   $('#track-inventory').checked = true;
@@ -694,9 +707,9 @@ function syncProductKind() {
   $('#stock-low-threshold').disabled = !isPhysical || !trackInventory.checked;
 
   if (!$('#product-id').value) {
-    if ($('#product-kind').value === 'digital') $('#product-fulfillment').value = 'digital_delivery';
-    else if (isPhysical) $('#product-fulfillment').value = 'pickup';
-    else $('#product-fulfillment').value = 'both';
+    $('#product-fulfillment').value = $('#product-kind').value === 'digital'
+      ? 'email_delivery'
+      : 'home_delivery';
   }
 }
 
@@ -725,7 +738,7 @@ function openProduct(product = null) {
     $('#product-category').value = product.category_id || '';
     $('#product-description').value = product.short_description || '';
     $('#product-kind').value = product.kind;
-    $('#product-fulfillment').value = product.fulfillment;
+    $('#product-fulfillment').value = normalizeFulfillment(product.fulfillment, product.kind);
     $('#product-status').value = product.status;
     $('#product-featured').checked = product.featured;
     $('#price-mode').value = getPriceMode(product);
@@ -774,7 +787,7 @@ async function saveProduct(event) {
     name: $('#product-name').value.trim(),
     short_description: $('#product-description').value.trim() || null,
     kind,
-    fulfillment: $('#product-fulfillment').value,
+    fulfillment: databaseFulfillment($('#product-fulfillment').value),
     status,
     featured: $('#product-featured').checked,
     requires_quote: priceMode !== 'fixed' || $('#allow-custom-quote').checked,
