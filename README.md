@@ -15,7 +15,7 @@ Todas las rutas son relativas para funcionar correctamente bajo `/Sam/`.
 - `index.html`: web pública, catálogo inicial y formulario para preparar encargos.
 - `styles.css`: diseño responsive.
 - `app.js`: menú móvil, búsqueda, filtros y preparación de solicitudes.
-- `config.js`: conexión pública con Supabase; funciona vacía hasta configurar el proyecto.
+- `sam-settings.js`: conexión pública con Supabase; funciona vacía hasta configurar el proyecto.
 - `admin/`: ruta separada para la futura administración.
 - `assets/`: identidad gráfica local.
 - `supabase/`: tablas, RLS, Storage y catálogo inicial.
@@ -25,13 +25,13 @@ Todas las rutas son relativas para funcionar correctamente bajo `/Sam/`.
 1. Crea un proyecto vacío en Supabase.
 2. Ejecuta `supabase/migrations/202608010001_sam_core.sql` en el SQL Editor.
 3. Ejecuta `supabase/seed.sql`.
-4. Copia la URL del proyecto y la clave pública anónima en `config.js`.
+4. Copia la URL del proyecto y la clave pública anónima en `sam-settings.js`.
 5. Crea el primer usuario en Authentication y asígnalo como `owner` en `project_members`.
 
 La tienda consulta Supabase mediante su API REST y RLS. Si la conexión aún no está
 configurada o falla, conserva el catálogo local de reserva.
 
-La clave `service_role` es privada: no debe añadirse a `config.js`, al navegador ni
+La clave `service_role` es privada: no debe añadirse a `sam-settings.js`, al navegador ni
 al repositorio.
 
 ## Próxima fase
