@@ -75,6 +75,7 @@ create table public.catalog_products (
   base_price_cents integer check (base_price_cents is null or base_price_cents >= 0),
   currency char(3) not null default 'EUR',
   metadata jsonb not null default '{}'::jsonb,
+  sort_order integer not null default 0,
   published_at timestamptz,
   created_by uuid references public.profiles(id) on delete set null,
   created_at timestamptz not null default now(),
@@ -155,7 +156,7 @@ create table public.audit_logs (
 
 create index project_members_user_idx on public.project_members(user_id);
 create index categories_project_order_idx on public.catalog_categories(project_id, sort_order);
-create index products_project_status_idx on public.catalog_products(project_id, status);
+create index products_project_status_idx on public.catalog_products(project_id, status, sort_order);
 create index products_category_idx on public.catalog_products(category_id);
 create index variants_product_order_idx on public.product_variants(product_id, sort_order);
 create index files_project_visibility_idx on public.files(project_id, visibility);
@@ -312,4 +313,3 @@ create policy "sam admins delete public assets" on storage.objects for delete to
     select 1 from public.projects p where p.slug = 'sam' and public.has_project_role(p.id, array['owner','admin']::public.project_role[])
   )
 );
-
