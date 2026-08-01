@@ -26,9 +26,16 @@ const briefForm = document.querySelector('#brief-form');
 const formStatus = document.querySelector('#form-status');
 const contactSubmit = document.querySelector('#contact-submit');
 const contactNoteCopy = document.querySelector('#contact-note-copy');
+const commerceSection = document.querySelector('#compra-y-pago');
+const commerceDialog = document.querySelector('#commerce-dialog');
+const commerceDialogClose = document.querySelector('#commerce-dialog-close');
+const commerceDialogConfirm = document.querySelector('#commerce-dialog-confirm');
 let catalogCards = [...document.querySelectorAll('.catalog-card')];
 let activeFilter = 'all';
 let storefrontSettings = {};
+let commerceNoticeScheduled = false;
+
+const commerceNoticeSessionKey = 'sam-commerce-notice-v1';
 
 function normalize(value) {
   return String(value || '')
@@ -503,6 +510,132 @@ function updateContactUI() {
   }
 }
 
+function normalizeWallapopUrl(value) {
+  const rawUrl = String(value || '').trim();
+  if (!rawUrl) return '';
+
+  try {
+    const url = new URL(rawUrl);
+    const hostname = url.hostname.toLocaleLowerCase('es');
+    if (url.protocol !== 'https:' || !(hostname === 'wallapop.com' || hostname.endsWith('.wallapop.com'))) {
+      return '';
+    }
+    return url.toString();
+  } catch {
+    return '';
+  }
+}
+
+function nationalBizumNumber(value) {
+  const digits = String(value || '').replace(/\D/g, '');
+  return digits.length === 11 && digits.startsWith('34') ? digits.slice(2) : digits;
+}
+
+function formatPhoneNumber(value) {
+  const digits = nationalBizumNumber(value);
+  if (digits.length === 9) return digits.replace(/(\d{3})(?=\d)/g, '$1 ').trim();
+  return digits.replace(/(\d{3})(?=\d)/g, '$1 ').trim();
+}
+
+function commerceNoticeSeen() {
+  try {
+    return sessionStorage.getItem(commerceNoticeSessionKey) === 'seen';
+  } catch {
+    return false;
+  }
+}
+
+function markCommerceNoticeSeen() {
+  try {
+    sessionStorage.setItem(commerceNoticeSessionKey, 'seen');
+  } catch {
+    // El aviso sigue funcionando aunque el navegador bloquee sessionStorage.
+  }
+}
+
+function closeCommerceDialog() {
+  if (commerceDialog?.open) commerceDialog.close();
+}
+
+function showCommerceDialog() {
+  if (!commerceDialog || commerceDialog.open || commerceNoticeSeen()) return;
+  try {
+    commerceDialog.showModal();
+    markCommerceNoticeSeen();
+    commerceDialogClose?.focus();
+  } catch (error) {
+    console.warn('No se ha podido abrir el aviso de compra.', error);
+  }
+}
+
+function updateCommerceUI() {
+  const bizumPhone = nationalBizumNumber(storefrontSettings.bizum_phone);
+  const wallapopUrl = normalizeWallapopUrl(storefrontSettings.wallapop_url);
+  const hasBizum = bizumPhone.length >= 8;
+  const hasWallapop = Boolean(wallapopUrl);
+  const hasSalesChannel = hasBizum || hasWallapop;
+
+  if (commerceSection) commerceSection.hidden = !hasSalesChannel;
+  document.querySelectorAll('[data-commerce-nav]').forEach((link) => {
+    link.hidden = !hasSalesChannel;
+  });
+
+  document.querySelectorAll('[data-bizum-card]').forEach((card) => {
+    card.hidden = !hasBizum;
+  });
+  document.querySelectorAll('[data-wallapop-card]').forEach((card) => {
+    card.hidden = !hasWallapop;
+  });
+  document.querySelectorAll('[data-bizum-phone]').forEach((element) => {
+    element.textContent = formatPhoneNumber(bizumPhone);
+  });
+  document.querySelectorAll('[data-wallapop-link]').forEach((link) => {
+    if (hasWallapop) link.href = wallapopUrl;
+    else link.removeAttribute('href');
+  });
+  document.querySelectorAll('.commerce-options, .commerce-dialog-options').forEach((container) => {
+    container.classList.toggle('is-single', hasBizum !== hasWallapop);
+  });
+
+  const noticeEnabled = storefrontSettings.commerce_notice_enabled !== false;
+  if (hasSalesChannel && noticeEnabled && !commerceNoticeScheduled && !commerceNoticeSeen()) {
+    commerceNoticeScheduled = true;
+    window.setTimeout(showCommerceDialog, 350);
+  }
+}
+
+async function copyBizumNumber(button) {
+  const bizumPhone = nationalBizumNumber(storefrontSettings.bizum_phone);
+  if (!bizumPhone) return;
+
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(bizumPhone);
+    } else {
+      const helper = document.createElement('textarea');
+      helper.value = bizumPhone;
+      helper.setAttribute('readonly', '');
+      helper.style.position = 'fixed';
+      helper.style.opacity = '0';
+      document.body.append(helper);
+      helper.select();
+      document.execCommand('copy');
+      helper.remove();
+    }
+
+    const originalText = button.textContent;
+    button.textContent = 'Número copiado ✓';
+    document.querySelectorAll('[data-bizum-status]').forEach((status) => {
+      status.textContent = 'Ya puedes pegarlo en la app de tu banco.';
+    });
+    window.setTimeout(() => { button.textContent = originalText; }, 2200);
+  } catch {
+    document.querySelectorAll('[data-bizum-status]').forEach((status) => {
+      status.textContent = `Copia manualmente el número ${formatPhoneNumber(bizumPhone)}.`;
+    });
+  }
+}
+
 async function loadCatalogFromDatabase() {
   const rawConfig = window.SAM_CONFIG || {};
   const config = {
@@ -541,6 +674,7 @@ async function loadCatalogFromDatabase() {
 
     storefrontSettings = settingRows[0]?.value || {};
     updateContactUI();
+    updateCommerceUI();
     if (!products.length) return;
     catalogGrid.replaceChildren(...products.map((product) => createCatalogCard(product, config.supabaseUrl)));
     catalogCards = [...catalogGrid.querySelectorAll('.catalog-card')];
@@ -557,6 +691,15 @@ enhanceFallbackCatalog();
 bindServiceLinks();
 updateCatalog();
 loadCatalogFromDatabase();
+
+document.querySelectorAll('[data-copy-bizum]').forEach((button) => {
+  button.addEventListener('click', () => copyBizumNumber(button));
+});
+commerceDialogClose?.addEventListener('click', closeCommerceDialog);
+commerceDialogConfirm?.addEventListener('click', closeCommerceDialog);
+commerceDialog?.addEventListener('click', (event) => {
+  if (event.target === commerceDialog) closeCommerceDialog();
+});
 
 briefForm?.addEventListener('submit', async (event) => {
   event.preventDefault();

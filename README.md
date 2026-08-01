@@ -56,8 +56,19 @@ ampliado. Los metadatos se guardan en `files` y `product_images`; los binarios n
 guardan en GitHub.
 
 Desde el mismo panel se configura el nombre de contacto, WhatsApp y correo del
-propietario. La tienda pública utiliza esos datos para preparar una consulta directa. La
-sesión se renueva de forma automática y todas las operaciones quedan protegidas
-mediante RLS.
+propietario. También se guardan en `project_settings.storefront` el número de Bizum, el
+enlace público de Wallapop y la preferencia que activa el aviso de entrada. La tienda
+pública utiliza esos datos para preparar consultas y mostrar los canales de compra sin
+tener que editar el código. La sesión se renueva de forma automática y todas las
+operaciones quedan protegidas mediante RLS.
 
-Los datos definitivos de contacto no se han inventado: deben añadirse cuando se confirmen el teléfono de WhatsApp y el correo de SAM.
+El aviso de Bizum y Wallapop se adapta a escritorio y móvil y se muestra una vez por
+sesión del navegador. La información permanece visible en la sección «Pago y venta» de
+la tienda. El número de Bizum puede copiarse con un botón y el perfil de Wallapop se abre
+en una pestaña nueva.
+
+Los datos definitivos de pago y del perfil externo no se inventan: deben añadirse desde
+Administración cuando se confirmen el número de Bizum y la URL pública de Wallapop.
+
+Los logotipos vectoriales de Bizum y Wallapop proceden de Wikimedia Commons y se usan
+únicamente para identificar sus respectivos servicios.

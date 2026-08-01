@@ -426,6 +426,47 @@ button { cursor: pointer; }
 .future-section ul { grid-column: 1 / -1; margin: 10px 0 0; padding: 24px 0 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; border-top: 1px solid rgba(255,255,255,.15); list-style: none; }
 .future-section li { padding: 14px; text-align: center; background: rgba(255,255,255,.08); border-radius: 16px; font-size: 13px; font-weight: 800; }
 
+.commerce-section { width: min(var(--max), calc(100% - 40px)); margin: 32px auto 0; padding: 62px; display: grid; grid-template-columns: .78fr 1.22fr; align-items: center; gap: 58px; background: var(--white); border: 1px solid var(--line); border-radius: 38px; box-shadow: var(--shadow); }
+.commerce-heading h2 { margin: 0; font-size: clamp(42px, 4.6vw, 64px); line-height: .98; letter-spacing: -.055em; }
+.commerce-heading > p:last-child { margin: 24px 0 0; color: var(--muted); font-size: 16px; }
+.commerce-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.commerce-options.is-single { grid-template-columns: 1fr; }
+.commerce-card { min-width: 0; min-height: 340px; padding: 27px; display: flex; flex-direction: column; border-radius: 26px; }
+.commerce-card--bizum { background: linear-gradient(145deg, #e3fbfc, #c8f4f6); border: 1px solid rgba(5,192,199,.24); }
+.commerce-card--wallapop { background: linear-gradient(145deg, #e6fbf7, #c8f5ec); border: 1px solid rgba(19,193,172,.24); }
+.commerce-brand { min-height: 54px; display: flex; align-items: center; }
+.commerce-brand img { width: auto; max-width: 155px; max-height: 42px; display: block; }
+.commerce-card > div:nth-child(2) { margin-top: 23px; }
+.commerce-card > div:nth-child(2) > p:first-child { margin: 0 0 7px; color: var(--muted); font-size: 10px; font-weight: 950; letter-spacing: .11em; text-transform: uppercase; }
+.commerce-card h3 { margin: 0; font-size: 23px; line-height: 1.13; letter-spacing: -.035em; }
+.commerce-phone { margin-top: 18px; display: block; font-size: clamp(27px, 3vw, 35px); line-height: 1; letter-spacing: .015em; }
+.commerce-card .commerce-help { margin: 14px 0 0; color: #4f6866; font-size: 12px; }
+.commerce-action { width: 100%; min-height: 46px; margin-top: auto; padding: 0 15px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 0; border-radius: 999px; font-size: 12px; font-weight: 950; text-align: center; }
+.commerce-action--bizum { color: var(--white); background: #048f95; }
+.commerce-action--wallapop { color: #073f38; background: #79e4d5; }
+.commerce-action:hover, .commerce-action:focus-visible { filter: brightness(.94); transform: translateY(-1px); }
+.commerce-status { min-height: 17px; margin-top: 7px; display: block; color: #16635f; font-size: 10px; font-weight: 750; text-align: center; }
+
+.commerce-dialog { width: min(780px, calc(100% - 28px)); max-height: calc(100dvh - 28px); padding: 0; overflow: auto; color: var(--ink); background: var(--paper); border: 0; border-radius: 30px; box-shadow: 0 40px 110px rgba(20,16,21,.38); }
+.commerce-dialog::backdrop { background: rgba(28,23,29,.68); backdrop-filter: blur(7px); }
+.commerce-dialog-shell { position: relative; padding: 38px; }
+.commerce-dialog-close { position: absolute; z-index: 2; width: 42px; height: 42px; top: 20px; right: 20px; display: grid; place-items: center; color: var(--muted); background: rgba(255,255,255,.85); border: 1px solid var(--line); border-radius: 50%; font-size: 28px; line-height: 1; }
+.commerce-dialog-heading { padding-right: 54px; }
+.commerce-dialog-kicker { color: var(--pink); font-size: 10px; font-weight: 950; letter-spacing: .13em; text-transform: uppercase; }
+.commerce-dialog-heading h2 { max-width: 650px; margin: 10px 0 0; font-size: clamp(32px, 5vw, 48px); line-height: .98; letter-spacing: -.052em; }
+.commerce-dialog-heading p { max-width: 650px; margin: 18px 0 0; color: var(--muted); font-size: 14px; }
+.commerce-dialog-options { margin-top: 28px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
+.commerce-dialog-options.is-single { grid-template-columns: 1fr; }
+.commerce-dialog-card { min-width: 0; padding: 23px; display: flex; flex-direction: column; border-radius: 21px; }
+.commerce-dialog-card--bizum { background: #dcf8fa; }
+.commerce-dialog-card--wallapop { background: #dbf8f3; }
+.commerce-dialog-card img { width: auto; max-width: 140px; height: 37px; display: block; object-fit: contain; object-position: left center; }
+.commerce-dialog-card p { margin: 20px 0 0; color: #516361; font-size: 12px; }
+.commerce-dialog-card strong { margin-top: 6px; display: block; font-size: 28px; line-height: 1.1; }
+.commerce-dialog-card button, .commerce-dialog-card a { min-height: 42px; margin-top: 21px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; color: var(--white); background: var(--ink); border: 0; border-radius: 999px; font-size: 11px; font-weight: 950; text-align: center; }
+.commerce-dialog-card span[data-bizum-status] { min-height: 15px; margin-top: 6px; color: #16635f; font-size: 9px; font-weight: 750; text-align: center; }
+.commerce-dialog-confirm { min-height: 48px; margin: 22px auto 0; padding: 0 22px; display: flex; align-items: center; justify-content: center; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 999px; font-size: 12px; font-weight: 900; }
+
 .contact-section { padding: 120px 0; display: grid; grid-template-columns: .9fr 1.1fr; gap: 70px; }
 .contact-copy > p { margin-top: 24px; }
 .contact-note { margin-top: 26px; padding: 16px; display: flex; gap: 12px; align-items: flex-start; background: var(--yellow-soft); border-radius: 16px; }
@@ -514,6 +555,17 @@ footer p { margin: 8px 0 0; }
   .future-section { width: calc(100% - 32px); padding: 34px 24px; grid-template-columns: 1fr; border-radius: 28px; }
   .future-section > p, .future-section ul { grid-column: auto; }
   .future-section ul { grid-template-columns: 1fr 1fr; }
+
+  .commerce-section { width: calc(100% - 32px); padding: 36px 24px; grid-template-columns: 1fr; gap: 34px; border-radius: 28px; }
+  .commerce-options { grid-template-columns: 1fr; }
+  .commerce-card { min-height: 310px; }
+  .commerce-dialog { width: calc(100% - 16px); max-height: calc(100dvh - 16px); margin: auto 8px 8px; border-radius: 25px 25px 18px 18px; }
+  .commerce-dialog-shell { padding: 28px 20px 22px; }
+  .commerce-dialog-close { top: 14px; right: 14px; }
+  .commerce-dialog-heading { padding-right: 42px; }
+  .commerce-dialog-heading h2 { font-size: clamp(32px, 10vw, 44px); }
+  .commerce-dialog-options { grid-template-columns: 1fr; }
+  .commerce-dialog-card { padding: 20px; }
 
   .contact-section { padding: 85px 0; grid-template-columns: 1fr; gap: 36px; }
   .brief-form { padding: 22px; }

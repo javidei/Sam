@@ -66,6 +66,22 @@ function formatMoney(cents, currency = 'EUR') {
   return new Intl.NumberFormat('es-ES', { style: 'currency', currency }).format(cents / 100);
 }
 
+function normalizeWallapopUrl(value) {
+  const rawUrl = String(value || '').trim();
+  if (!rawUrl) return '';
+
+  try {
+    const url = new URL(rawUrl);
+    const hostname = url.hostname.toLocaleLowerCase('es');
+    if (url.protocol !== 'https:' || !(hostname === 'wallapop.com' || hostname.endsWith('.wallapop.com'))) {
+      return null;
+    }
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
 function encodeStoragePath(path) {
   return String(path).split('/').map(encodeURIComponent).join('/');
 }
@@ -459,6 +475,9 @@ function fillStorefrontForm() {
   $('#contact-name').value = value.contact_name || '';
   $('#contact-whatsapp').value = value.contact_whatsapp || '';
   $('#contact-email').value = value.contact_email || '';
+  $('#bizum-phone').value = value.bizum_phone || '';
+  $('#wallapop-url').value = value.wallapop_url || '';
+  $('#commerce-notice-enabled').checked = value.commerce_notice_enabled !== false;
 
   const canManageSettings = ['owner', 'admin'].includes(membership.role);
   [...storefrontForm.elements].forEach((element) => { element.disabled = !canManageSettings; });
@@ -472,6 +491,9 @@ async function saveStorefront(event) {
   const contactName = $('#contact-name').value.trim();
   const contactWhatsapp = $('#contact-whatsapp').value.replace(/\D/g, '');
   const contactEmail = $('#contact-email').value.trim();
+  const bizumPhone = $('#bizum-phone').value.replace(/\D/g, '');
+  const wallapopUrl = normalizeWallapopUrl($('#wallapop-url').value);
+  const commerceNoticeEnabled = $('#commerce-notice-enabled').checked;
 
   if (!contactWhatsapp && !contactEmail) {
     setStatus(storefrontStatus, 'Añade un WhatsApp o un correo para recibir las consultas.', true);
@@ -481,12 +503,23 @@ async function saveStorefront(event) {
     setStatus(storefrontStatus, 'Revisa el WhatsApp: debe incluir el prefijo de país y tener entre 8 y 15 cifras.', true);
     return;
   }
+  if (bizumPhone && (bizumPhone.length < 8 || bizumPhone.length > 15)) {
+    setStatus(storefrontStatus, 'Revisa el número de Bizum: debe tener entre 8 y 15 cifras.', true);
+    return;
+  }
+  if (wallapopUrl === null) {
+    setStatus(storefrontStatus, 'El enlace debe ser una dirección HTTPS válida de Wallapop.', true);
+    return;
+  }
 
   const value = {
     ...(storefrontSetting?.value || {}),
     contact_name: contactName,
     contact_whatsapp: contactWhatsapp,
-    contact_email: contactEmail
+    contact_email: contactEmail,
+    bizum_phone: bizumPhone,
+    wallapop_url: wallapopUrl,
+    commerce_notice_enabled: commerceNoticeEnabled
   };
   setStatus(storefrontStatus, 'Guardando contacto…');
   try {
@@ -506,7 +539,9 @@ async function saveStorefront(event) {
     }
     storefrontSetting = { key: 'storefront', value, is_public: true };
     $('#contact-whatsapp').value = contactWhatsapp;
-    setStatus(storefrontStatus, 'Contacto guardado. La tienda pública lo utilizará al enviar una consulta.');
+    $('#bizum-phone').value = bizumPhone;
+    $('#wallapop-url').value = wallapopUrl;
+    setStatus(storefrontStatus, 'Contacto, Bizum y Wallapop guardados. La tienda pública se actualizará al volver a cargar.');
   } catch (error) {
     setStatus(storefrontStatus, error.message, true);
   }

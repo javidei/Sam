@@ -12,9 +12,9 @@
   <meta property="og:url" content="https://javidei.github.io/Sam/">
   <link rel="canonical" href="https://javidei.github.io/Sam/">
   <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=sam-github-7">
-  <script src="sam-settings.js?v=sam-github-7" defer></script>
-  <script src="app.js?v=sam-github-7" defer></script>
+  <link rel="stylesheet" href="styles.css?v=sam-github-8">
+  <script src="sam-settings.js?v=sam-github-8" defer></script>
+  <script src="app.js?v=sam-github-8" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#contenido">Saltar al contenido</a>
@@ -38,6 +38,7 @@
       <nav class="nav" id="main-nav" aria-label="Navegación principal">
         <a href="#servicios">Servicios</a>
         <a href="#catalogo">Catálogo</a>
+        <a href="#compra-y-pago" data-commerce-nav hidden>Pago y venta</a>
         <a href="#proceso">Cómo funciona</a>
         <a href="#contacto">Contacto</a>
       </nav>
@@ -248,6 +249,36 @@
       </div>
     </section>
 
+    <section class="commerce-section reveal" id="compra-y-pago" aria-labelledby="commerce-title" hidden>
+      <div class="commerce-heading">
+        <p class="section-kicker">Más formas de comprar y pagar</p>
+        <h2 id="commerce-title">Fácil para ti.<br>Directo con SAM.</h2>
+        <p>Puedes abonar encargos acordados por Bizum y consultar los artículos que SAM tiene publicados en Wallapop.</p>
+      </div>
+      <div class="commerce-options">
+        <article class="commerce-card commerce-card--bizum" data-bizum-card hidden>
+          <div class="commerce-brand"><img src="assets/bizum.svg" alt="Bizum" width="122" height="36"></div>
+          <div>
+            <p>Pagos disponibles</p>
+            <h3>Haz tu Bizum al número de SAM</h3>
+            <strong class="commerce-phone" data-bizum-phone></strong>
+            <p class="commerce-help">Confirma antes con SAM el importe y el concepto de tu encargo.</p>
+          </div>
+          <button class="commerce-action commerce-action--bizum" type="button" data-copy-bizum>Copiar número</button>
+          <span class="commerce-status" data-bizum-status aria-live="polite"></span>
+        </article>
+        <article class="commerce-card commerce-card--wallapop" data-wallapop-card hidden>
+          <div class="commerce-brand"><img src="assets/wallapop.svg" alt="Wallapop" width="151" height="58"></div>
+          <div>
+            <p>Catálogo externo</p>
+            <h3>Descubre más artículos en Wallapop</h3>
+            <p class="commerce-help">Abre el perfil de SAM para consultar sus anuncios, fotos, precios y disponibilidad.</p>
+          </div>
+          <a class="commerce-action commerce-action--wallapop" data-wallapop-link target="_blank" rel="noopener noreferrer">Ver perfil en Wallapop <span aria-hidden="true">↗</span></a>
+        </article>
+      </div>
+    </section>
+
     <section class="process-section" id="proceso" aria-labelledby="process-title">
       <div class="process-copy reveal">
         <p class="section-kicker">Fácil de principio a fin</p>
@@ -318,10 +349,37 @@
     <div class="footer-links">
       <a href="#servicios">Servicios</a>
       <a href="#catalogo">Catálogo</a>
+      <a href="#compra-y-pago" data-commerce-nav hidden>Pago y Wallapop</a>
       <a href="#proceso">Cómo funciona</a>
       <a href="admin/">Administración</a>
     </div>
     <p>© <span id="year"></span> SAM</p>
   </footer>
+
+  <dialog class="commerce-dialog" id="commerce-dialog" aria-labelledby="commerce-dialog-title">
+    <div class="commerce-dialog-shell">
+      <button class="commerce-dialog-close" id="commerce-dialog-close" type="button" aria-label="Cerrar aviso">×</button>
+      <div class="commerce-dialog-heading">
+        <span class="commerce-dialog-kicker">Información de compra</span>
+        <h2 id="commerce-dialog-title">Ahora también puedes pagar por Bizum y comprar en Wallapop.</h2>
+        <p>Elige la opción que necesitas. Los encargos personalizados seguirán confirmándose directamente con SAM antes del pago.</p>
+      </div>
+      <div class="commerce-dialog-options">
+        <article class="commerce-dialog-card commerce-dialog-card--bizum" data-bizum-card hidden>
+          <img src="assets/bizum.svg" alt="Bizum" width="122" height="36">
+          <p>Envía el pago acordado a:</p>
+          <strong data-bizum-phone></strong>
+          <button type="button" data-copy-bizum>Copiar número</button>
+          <span data-bizum-status aria-live="polite"></span>
+        </article>
+        <article class="commerce-dialog-card commerce-dialog-card--wallapop" data-wallapop-card hidden>
+          <img src="assets/wallapop.svg" alt="Wallapop" width="151" height="58">
+          <p>Consulta los artículos publicados por SAM.</p>
+          <a data-wallapop-link target="_blank" rel="noopener noreferrer">Ir al perfil <span aria-hidden="true">↗</span></a>
+        </article>
+      </div>
+      <button class="commerce-dialog-confirm" id="commerce-dialog-confirm" type="button">Entendido, ver la tienda</button>
+    </div>
+  </dialog>
 </body>
 </html>
