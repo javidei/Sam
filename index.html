@@ -12,9 +12,9 @@
   <meta property="og:url" content="https://javidei.github.io/Sam/">
   <link rel="canonical" href="https://javidei.github.io/Sam/">
   <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=sam-github-2">
-  <script src="sam-settings.js?v=sam-github-4" defer></script>
-  <script src="app.js?v=sam-github-4" defer></script>
+  <link rel="stylesheet" href="styles.css?v=sam-github-5">
+  <script src="sam-settings.js?v=sam-github-5" defer></script>
+  <script src="app.js?v=sam-github-5" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#contenido">Saltar al contenido</a>
@@ -132,7 +132,7 @@
           <p class="section-kicker">Catálogo SAM</p>
           <h2 id="catalog-title">Busca por servicio<br>o por tipo de encargo.</h2>
         </div>
-        <p>Productos, precios, variantes y disponibilidad podrán actualizarse desde la gestión de SAM sin editar esta página.</p>
+        <p>Los artículos muestran su precio y las unidades disponibles. Los servicios pueden tener una tarifa estándar, un precio desde o solicitar presupuesto.</p>
       </div>
 
       <div class="catalog-toolbar reveal">
@@ -151,6 +151,12 @@
       </div>
 
       <p class="catalog-result" id="catalog-result" aria-live="polite"></p>
+
+      <div class="catalog-legend" role="note" aria-label="Información del catálogo">
+        <span><i class="legend-dot legend-dot--stock"></i> Stock visible en artículos</span>
+        <span><i class="legend-dot legend-dot--price"></i> Precio fijo, desde o a consultar</span>
+        <span><i class="legend-dot legend-dot--contact"></i> Consulta directa para trabajos a medida</span>
+      </div>
 
       <div class="catalog-grid" id="catalog-grid" aria-live="polite">
         <article class="catalog-card reveal" data-category="impresion" data-name="copias documentos impresión blanco negro color encuadernación">
@@ -274,10 +280,10 @@
       <div class="contact-copy reveal">
         <p class="section-kicker">¿Tienes una idea?</p>
         <h2 id="contact-title">Vamos a darle forma.</h2>
-        <p>Prepara los datos básicos de tu encargo. El canal definitivo de WhatsApp o correo se añadirá aquí cuando esté confirmado.</p>
-        <div class="contact-note">
+        <p id="contact-intro">Prepara los datos básicos de tu encargo. Si un servicio necesita ajustes, podrás comentarlos directamente con el propietario.</p>
+        <div class="contact-note" id="contact-note">
           <span aria-hidden="true">i</span>
-          <p><strong>Contacto pendiente de configurar.</strong> No mostramos teléfonos ni correos inventados.</p>
+          <p id="contact-note-copy"><strong>Contacto pendiente de configurar.</strong> El propietario puede añadir WhatsApp o correo desde la administración.</p>
         </div>
       </div>
 
@@ -297,7 +303,7 @@
           Cuéntanos tu idea
           <textarea id="brief-detail" rows="5" placeholder="Qué necesitas, cantidad aproximada, medidas y para cuándo..." required></textarea>
         </label>
-        <button class="button button--dark" type="submit">Preparar solicitud</button>
+        <button class="button button--dark" id="contact-submit" type="submit">Preparar solicitud</button>
         <p class="form-status" id="form-status" aria-live="polite"></p>
       </form>
     </section>

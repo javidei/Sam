@@ -8,7 +8,9 @@ with new_project as (
 insert into public.project_settings (project_id, key, value, is_public)
 select id, 'storefront', '{"currency":"EUR","location":"Palma del Río, Córdoba","commerce_enabled":false}'::jsonb, true
 from new_project
-on conflict (project_id, key) do nothing;
+on conflict (project_id, key) do update set
+  value = public.project_settings.value || excluded.value,
+  is_public = true;
 
 with sam as (select id from public.projects where slug = 'sam')
 insert into public.catalog_categories (project_id, slug, name, description, sort_order)

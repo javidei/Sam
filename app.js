@@ -21,8 +21,14 @@ const catalogGrid = document.querySelector('#catalog-grid');
 const resultText = document.querySelector('#catalog-result');
 const emptyState = document.querySelector('#catalog-empty');
 const typeSelect = document.querySelector('#brief-type');
+const briefDetail = document.querySelector('#brief-detail');
+const briefForm = document.querySelector('#brief-form');
+const formStatus = document.querySelector('#form-status');
+const contactSubmit = document.querySelector('#contact-submit');
+const contactNoteCopy = document.querySelector('#contact-note-copy');
 let catalogCards = [...document.querySelectorAll('.catalog-card')];
 let activeFilter = 'all';
+let storefrontSettings = {};
 
 function normalize(value) {
   return String(value || '')
@@ -88,8 +94,10 @@ function bindServiceLinks(scope = document) {
         typeSelect.value = categoryMap[firstCategory];
       }
 
-      const detail = document.querySelector('#brief-detail');
-      if (detail && !detail.value) detail.value = `Me interesa: ${link.dataset.service}. `;
+      if (briefDetail && !briefDetail.value) {
+        const price = link.dataset.price ? ` (${link.dataset.price})` : '';
+        briefDetail.value = `Me interesa: ${link.dataset.service}${price}. `;
+      }
     });
   });
 }
@@ -105,30 +113,63 @@ function getCategories(product) {
   return [...new Set([mainCategory, ...extraCategories])].filter(Boolean);
 }
 
-function formatPrice(product) {
-  const variants = (product.variants || [])
+function getActiveVariants(product) {
+  return (product.variants || [])
     .filter((variant) => variant.is_active)
     .sort((a, b) => a.sort_order - b.sort_order);
+}
+
+function getPriceInfo(product) {
+  const variants = getActiveVariants(product);
   const variantWithPrice = variants.find((variant) => Number.isInteger(variant.price_cents));
   const cents = variantWithPrice?.price_cents ?? product.base_price_cents;
   const currency = variantWithPrice?.currency || product.currency || 'EUR';
+  const configuredMode = product.metadata?.price_mode;
+  const priceMode = ['fixed', 'from', 'quote'].includes(configuredMode)
+    ? configuredMode
+    : (!Number.isInteger(cents) ? 'quote' : (product.requires_quote || variants.length > 1 ? 'from' : 'fixed'));
 
-  if (!Number.isInteger(cents)) return product.requires_quote ? 'Presupuesto' : 'Consultar';
+  if (priceMode === 'quote' || !Number.isInteger(cents)) {
+    return { mode: 'quote', label: 'Precio', text: 'A consultar' };
+  }
 
   const amount = new Intl.NumberFormat('es-ES', {
     style: 'currency',
     currency
   }).format(cents / 100);
 
-  return product.requires_quote || variants.length > 1 ? `Desde ${amount}` : amount;
+  if (priceMode === 'from') return { mode: 'from', label: 'Precio desde', text: amount };
+  return {
+    mode: 'fixed',
+    label: product.kind === 'service' || product.kind === 'digital' ? 'Precio estándar' : 'Precio',
+    text: amount
+  };
 }
 
 function getAvailability(product) {
-  const trackedVariants = (product.variants || []).filter((variant) => variant.is_active && variant.track_inventory);
-  if (!trackedVariants.length) return product.kind === 'digital' ? 'Entrega digital' : 'Por encargo';
+  if (product.kind === 'digital') return { text: 'Entrega digital', state: 'digital', quantity: null };
+  if (product.kind === 'service') {
+    return { text: product.requires_quote ? 'Servicio personalizable' : 'Servicio disponible', state: 'order', quantity: null };
+  }
 
-  const stock = trackedVariants.reduce((total, variant) => total + Math.max(0, variant.stock_quantity), 0);
-  return stock > 0 ? 'Disponible' : 'Agotado';
+  const trackedVariants = getActiveVariants(product).filter((variant) => variant.track_inventory);
+  if (!trackedVariants.length) return { text: 'Disponible por encargo', state: 'order', quantity: null };
+
+  const quantity = trackedVariants.reduce((total, variant) => total + Math.max(0, variant.stock_quantity), 0);
+  const lowStockThreshold = trackedVariants.reduce((highest, variant) => Math.max(highest, variant.low_stock_threshold || 0), 0);
+  if (quantity === 0) return { text: 'Agotado', state: 'out', quantity };
+  if (lowStockThreshold > 0 && quantity <= lowStockThreshold) {
+    return { text: `Últimas ${quantity} ud${quantity === 1 ? '.' : 's.'}`, state: 'low', quantity };
+  }
+  return { text: `${quantity} ud${quantity === 1 ? '.' : 's.'} disponibles`, state: 'available', quantity };
+}
+
+function getActionLabel(product, price, availability) {
+  if (availability.state === 'out') return 'Consultar reposición';
+  if (price.mode === 'quote') return 'Pedir presupuesto';
+  if (price.mode === 'from') return 'Consultar opciones';
+  if (product.requires_quote) return 'Consultar otro servicio';
+  return 'Me interesa';
 }
 
 function publicStorageUrl(file, supabaseUrl) {
@@ -175,9 +216,20 @@ function appendFallbackArt(art, style) {
   }
 }
 
+function createPriceBlock(price) {
+  const priceBlock = document.createElement('strong');
+  priceBlock.className = 'catalog-price';
+  const priceLabel = document.createElement('small');
+  priceLabel.textContent = price.label;
+  priceBlock.append(priceLabel, document.createTextNode(price.text));
+  return priceBlock;
+}
+
 function createCatalogCard(product, supabaseUrl) {
   const category = getCategory(product);
   const categories = getCategories(product);
+  const price = getPriceInfo(product);
+  const availabilityInfo = getAvailability(product);
   const card = document.createElement('article');
   card.className = 'catalog-card reveal is-visible';
   card.dataset.category = categories.join(' ');
@@ -211,21 +263,47 @@ function createCatalogCard(product, supabaseUrl) {
   const categoryLabel = document.createElement('span');
   categoryLabel.textContent = category.name;
   const availability = document.createElement('b');
-  availability.textContent = getAvailability(product);
+  availability.className = `catalog-stock catalog-stock--${availabilityInfo.state}`;
+  availability.textContent = availabilityInfo.text;
   meta.append(categoryLabel, availability);
 
   const title = document.createElement('h3');
   title.textContent = product.name;
   const description = document.createElement('p');
   description.textContent = product.short_description || product.description || 'Consulta las opciones disponibles.';
+
+  const purchase = document.createElement('div');
+  purchase.className = 'catalog-purchase';
   const action = document.createElement('a');
   action.href = '#contacto';
   action.dataset.service = product.name;
-  action.textContent = `${formatPrice(product)} →`;
+  action.dataset.price = `${price.label}: ${price.text}`;
+  action.textContent = `${getActionLabel(product, price, availabilityInfo)} →`;
+  purchase.append(createPriceBlock(price), action);
 
-  copy.append(meta, title, description, action);
+  copy.append(meta, title, description, purchase);
   card.append(art, copy);
   return card;
+}
+
+function enhanceFallbackCatalog() {
+  catalogCards.forEach((card) => {
+    const copy = card.querySelector('.catalog-copy');
+    const metaStatus = copy?.querySelector(':scope > div:first-child b');
+    const action = copy?.querySelector(':scope > a[data-service]');
+    if (!copy || !action || copy.querySelector('.catalog-purchase')) return;
+
+    if (metaStatus) {
+      metaStatus.className = 'catalog-stock catalog-stock--order';
+      metaStatus.textContent = card.dataset.category?.includes('digital') ? 'Entrega digital' : 'Disponible por encargo';
+    }
+    const purchase = document.createElement('div');
+    purchase.className = 'catalog-purchase';
+    action.dataset.price = 'Precio: A consultar';
+    action.textContent = 'Pedir presupuesto →';
+    purchase.append(createPriceBlock({ label: 'Precio', text: 'A consultar' }), action);
+    copy.append(purchase);
+  });
 }
 
 async function apiGet(resource, params, config) {
@@ -239,6 +317,22 @@ async function apiGet(resource, params, config) {
 
   if (!response.ok) throw new Error(`Supabase respondió con ${response.status}`);
   return response.json();
+}
+
+function updateContactUI() {
+  const whatsapp = String(storefrontSettings.contact_whatsapp || '').replace(/\D/g, '');
+  const email = String(storefrontSettings.contact_email || '').trim();
+  const ownerName = String(storefrontSettings.contact_name || 'el propietario').trim();
+
+  if (whatsapp) {
+    contactSubmit.textContent = 'Escribir por WhatsApp';
+    contactNoteCopy.textContent = `La consulta se enviará por WhatsApp a ${ownerName}. Podrás revisar el mensaje antes de enviarlo.`;
+  } else if (email) {
+    contactSubmit.textContent = 'Enviar consulta por correo';
+    contactNoteCopy.textContent = `La consulta se preparará por correo para ${ownerName}.`;
+  } else {
+    contactSubmit.textContent = 'Preparar solicitud';
+  }
 }
 
 async function loadCatalogFromDatabase() {
@@ -262,13 +356,23 @@ async function loadCatalogFromDatabase() {
     const project = projects[0];
     if (!project) throw new Error('No existe el proyecto activo SAM');
 
-    const products = await apiGet('catalog_products', {
-      select: 'id,slug,name,short_description,description,kind,fulfillment,requires_quote,base_price_cents,currency,metadata,category:catalog_categories(slug,name),variants:product_variants(id,name,price_cents,currency,track_inventory,stock_quantity,is_active,sort_order),images:product_images(sort_order,is_primary,file:files(bucket,path,alt_text))',
-      project_id: `eq.${project.id}`,
-      status: 'eq.published',
-      order: 'featured.desc,sort_order.asc,name.asc'
-    }, config);
+    const [products, settingRows] = await Promise.all([
+      apiGet('catalog_products', {
+        select: 'id,slug,name,short_description,description,kind,fulfillment,requires_quote,base_price_cents,currency,metadata,category:catalog_categories(slug,name),variants:product_variants(id,name,price_cents,currency,track_inventory,stock_quantity,low_stock_threshold,is_active,sort_order),images:product_images(sort_order,is_primary,file:files(bucket,path,alt_text))',
+        project_id: `eq.${project.id}`,
+        status: 'eq.published',
+        order: 'featured.desc,sort_order.asc,name.asc'
+      }, config),
+      apiGet('project_settings', {
+        select: 'value',
+        project_id: `eq.${project.id}`,
+        key: 'eq.storefront',
+        limit: '1'
+      }, config)
+    ]);
 
+    storefrontSettings = settingRows[0]?.value || {};
+    updateContactUI();
     if (!products.length) return;
     catalogGrid.replaceChildren(...products.map((product) => createCatalogCard(product, config.supabaseUrl)));
     catalogCards = [...catalogGrid.querySelectorAll('.catalog-card')];
@@ -281,25 +385,36 @@ async function loadCatalogFromDatabase() {
   }
 }
 
+enhanceFallbackCatalog();
 bindServiceLinks();
 updateCatalog();
 loadCatalogFromDatabase();
-
-const briefForm = document.querySelector('#brief-form');
-const formStatus = document.querySelector('#form-status');
 
 briefForm?.addEventListener('submit', async (event) => {
   event.preventDefault();
 
   const type = typeSelect?.value.trim() || 'Encargo';
-  const detail = document.querySelector('#brief-detail')?.value.trim() || '';
-  const brief = `Solicitud para SAM\nTipo: ${type}\nDetalle: ${detail}`;
+  const detail = briefDetail?.value.trim() || '';
+  const brief = `Hola, quiero consultar un encargo para SAM.\n\nTipo: ${type}\nDetalle: ${detail}`;
+  const whatsapp = String(storefrontSettings.contact_whatsapp || '').replace(/\D/g, '');
+  const email = String(storefrontSettings.contact_email || '').trim();
+
+  if (whatsapp) {
+    window.open(`https://wa.me/${whatsapp}?text=${encodeURIComponent(brief)}`, '_blank', 'noopener');
+    formStatus.textContent = 'Se ha preparado el mensaje de WhatsApp. Revísalo antes de enviarlo.';
+    return;
+  }
+  if (email) {
+    window.location.href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(`Consulta SAM · ${type}`)}&body=${encodeURIComponent(brief)}`;
+    formStatus.textContent = 'Se ha preparado el correo con los datos del encargo.';
+    return;
+  }
 
   try {
     await navigator.clipboard.writeText(brief);
-    if (formStatus) formStatus.textContent = 'Solicitud preparada y copiada. Falta configurar el WhatsApp o correo definitivo para poder enviarla.';
+    formStatus.textContent = 'Solicitud copiada. Falta configurar WhatsApp o correo desde la administración para poder enviarla directamente.';
   } catch {
-    if (formStatus) formStatus.textContent = 'Solicitud preparada. Falta configurar el WhatsApp o correo definitivo para poder enviarla.';
+    formStatus.textContent = 'Solicitud preparada. Falta configurar WhatsApp o correo desde la administración.';
   }
 });
 
@@ -318,6 +433,3 @@ if ('IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-mot
 } else {
   revealItems.forEach((item) => item.classList.add('is-visible'));
 }
-
-const year = document.querySelector('#year');
-if (year) year.textContent = new Date().getFullYear();

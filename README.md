@@ -14,7 +14,7 @@ Todas las rutas son relativas para funcionar correctamente bajo `/Sam/`.
 
 - `index.html`: web pública, catálogo inicial y formulario para preparar encargos.
 - `styles.css`: diseño responsive.
-- `app.js`: menú móvil, búsqueda, filtros y preparación de solicitudes.
+- `app.js`: menú móvil, búsqueda, filtros, precios, stock y consultas al propietario.
 - `sam-settings.js`: conexión pública con Supabase; funciona vacía hasta configurar el proyecto.
 - `admin/`: inicio de sesión y CRUD de catálogo, precios y stock.
 - `assets/`: identidad gráfica local.
@@ -38,8 +38,14 @@ al repositorio.
 
 ## Administración
 
-El panel permite crear, editar, publicar, ocultar y eliminar productos, además de
-gestionar su variante principal, precio y stock. La sesión se renueva de forma
-automática y todas las operaciones quedan protegidas mediante RLS.
+El panel permite crear, editar, publicar, ocultar y eliminar artículos y servicios. Para
+cada entrada se puede elegir precio fijo, precio «desde» o precio a consultar. Los
+artículos físicos pueden controlar las unidades disponibles y el umbral de stock bajo;
+los servicios pueden mostrar una tarifa estándar y mantener la consulta personalizada.
+
+Desde el mismo panel se configura el nombre de contacto, WhatsApp y correo del
+propietario. La tienda pública utiliza esos datos para preparar una consulta directa. La
+sesión se renueva de forma automática y todas las operaciones quedan protegidas
+mediante RLS.
 
 Los datos definitivos de contacto no se han inventado: deben añadirse cuando se confirmen el teléfono de WhatsApp y el correo de SAM.

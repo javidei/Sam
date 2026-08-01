@@ -7,7 +7,7 @@
   <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#262329">
   <link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="admin.css">
+  <link rel="stylesheet" href="admin.css?v=sam-admin-2">
 </head>
 <body>
   <header class="topbar">
@@ -42,13 +42,38 @@
       </div>
       <section class="stats" aria-label="Resumen del catálogo">
         <article><span>Productos</span><strong id="stat-total">0</strong></article>
+        <article><span>Artículos físicos</span><strong id="stat-physical">0</strong></article>
         <article><span>Publicados</span><strong id="stat-published">0</strong></article>
-        <article><span>Borradores</span><strong id="stat-drafts">0</strong></article>
         <article><span>Con stock bajo</span><strong id="stat-low-stock">0</strong></article>
       </section>
+
+      <section class="panel storefront-panel">
+        <form id="storefront-form">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Contacto público</p>
+              <h2>Consultas al propietario</h2>
+              <p class="muted">Configura al menos un canal. Los clientes podrán preguntar por servicios personalizados y precios a medida.</p>
+            </div>
+            <button class="secondary-button" type="submit">Guardar contacto</button>
+          </div>
+          <div class="storefront-grid">
+            <label>Nombre visible<input id="contact-name" type="text" maxlength="80" placeholder="Por ejemplo: Javier"></label>
+            <label>WhatsApp con prefijo<input id="contact-whatsapp" type="tel" inputmode="tel" maxlength="20" placeholder="34600000000"></label>
+            <label>Correo electrónico<input id="contact-email" type="email" maxlength="160" placeholder="contacto@ejemplo.com"></label>
+          </div>
+          <p class="field-help">Para WhatsApp usa solo el número con prefijo de país, sin “+”, espacios ni guiones.</p>
+          <p id="storefront-status" class="form-status" role="status"></p>
+        </form>
+      </section>
+
       <section class="panel catalog-panel">
         <div class="toolbar">
           <label><span class="sr-only">Buscar productos</span><input id="product-search" type="search" placeholder="Buscar por nombre o SKU…"></label>
+          <select id="kind-filter" aria-label="Filtrar por tipo">
+            <option value="all">Todos los tipos</option><option value="physical">Artículos físicos</option>
+            <option value="service">Servicios</option><option value="digital">Servicios digitales</option>
+          </select>
           <select id="status-filter" aria-label="Filtrar por estado">
             <option value="all">Todos los estados</option><option value="published">Publicados</option>
             <option value="draft">Borradores</option><option value="hidden">Ocultos</option><option value="archived">Archivados</option>
@@ -77,13 +102,16 @@
         <label>Tipo<select id="product-kind"><option value="physical">Artículo físico</option><option value="service">Servicio</option><option value="digital">Servicio digital</option></select></label>
         <label>Entrega<select id="product-fulfillment"><option value="pickup">Recogida</option><option value="digital_delivery">Entrega digital</option><option value="both">Ambas</option></select></label>
         <label>Estado<select id="product-status"><option value="published">Publicado</option><option value="draft">Borrador</option><option value="hidden">Oculto</option><option value="archived">Archivado</option></select></label>
-        <label>Precio (€)<input id="variant-price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Vacío si requiere presupuesto"></label>
+        <label>Forma de precio<select id="price-mode"><option value="fixed">Precio fijo</option><option value="from">Precio desde</option><option value="quote">A consultar</option></select></label>
+        <label>Precio (€)<input id="variant-price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0,00"></label>
         <label>Nombre de la variante<input id="variant-name" type="text" value="Estándar" required maxlength="100"></label>
         <label>SKU<input id="variant-sku" type="text" maxlength="80" placeholder="SAM-XXX-001"></label>
-        <label class="check-field"><input id="requires-quote" type="checkbox"> Requiere presupuesto</label>
-        <label class="check-field"><input id="track-inventory" type="checkbox"> Controlar stock</label>
-        <label>Stock actual<input id="stock-quantity" type="number" step="1" value="0"></label>
+        <label class="check-field field-wide"><input id="allow-custom-quote" type="checkbox"> Permitir que escriban al propietario para consultar otra opción o precio</label>
+        <label class="check-field" data-inventory-field><input id="track-inventory" type="checkbox"> Controlar stock de este artículo</label>
+        <label data-inventory-field>Stock actual<input id="stock-quantity" type="number" min="0" step="1" value="0"></label>
+        <label data-inventory-field>Avisar con stock igual o inferior a<input id="stock-low-threshold" type="number" min="0" step="1" value="2"></label>
         <label class="check-field"><input id="product-featured" type="checkbox"> Producto destacado</label>
+        <p id="inventory-help" class="field-help field-wide">El stock solo se muestra en artículos físicos. Los servicios se presentan como disponibles o bajo presupuesto.</p>
       </div>
       <div class="dialog-actions">
         <button id="delete-product-button" class="danger-button" type="button" hidden>Eliminar</button><span class="action-spacer"></span>
@@ -93,7 +121,7 @@
       <p id="product-form-status" class="form-status" role="status"></p>
     </form>
   </dialog>
-  <script src="../sam-settings.js"></script>
-  <script src="admin.js"></script>
+  <script src="../sam-settings.js?v=sam-admin-2"></script>
+  <script src="admin.js?v=sam-admin-2"></script>
 </body>
 </html>
