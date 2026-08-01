@@ -498,7 +498,12 @@ footer p { margin: 8px 0 0; }
 .footer-bottom { margin-top: 30px; padding-top: 20px; display: flex; justify-content: space-between; gap: 20px; border-top: 1px solid rgba(255,255,255,.1); }
 .footer-bottom p { margin: 0; }
 
-.whatsapp-float { position: fixed; z-index: 35; right: max(18px, calc((100vw - var(--max)) / 2)); bottom: 22px; min-width: 60px; height: 60px; padding: 0 18px; display: flex; align-items: center; justify-content: center; gap: 9px; color: var(--white); background: #25d366; border: 1px solid rgba(255,255,255,.58); border-radius: 999px; box-shadow: 0 14px 34px rgba(20,96,55,.3); font-size: 13px; font-weight: 900; transition: transform .2s ease, box-shadow .2s ease, background .2s ease; }
+.social-float-dock { position: fixed; z-index: 35; right: 18px; bottom: 22px; display: flex; align-items: flex-end; flex-direction: column; gap: 10px; }
+.instagram-float { width: 46px; height: 46px; display: grid; place-items: center; color: var(--white); background: radial-gradient(circle at 30% 105%, #ffd600 0 20%, #ff7a00 42%, #ff0169 61%, #d300c5 78%, #7638fa 100%); border: 1px solid rgba(255,255,255,.7); border-radius: 50%; box-shadow: 0 11px 28px rgba(90,31,107,.28); transition: transform .2s ease, box-shadow .2s ease; }
+.instagram-float[hidden] { display: none; }
+.instagram-float svg { width: 27px; height: 27px; }
+.instagram-float:hover, .instagram-float:focus-visible { color: var(--white); box-shadow: 0 14px 34px rgba(90,31,107,.38); transform: translateY(-2px) scale(1.03); }
+.whatsapp-float { min-width: 60px; height: 60px; padding: 0 18px; display: flex; align-items: center; justify-content: center; gap: 9px; color: var(--white); background: #25d366; border: 1px solid rgba(255,255,255,.58); border-radius: 999px; box-shadow: 0 14px 34px rgba(20,96,55,.3); font-size: 13px; font-weight: 900; transition: transform .2s ease, box-shadow .2s ease, background .2s ease; }
 .whatsapp-float[hidden] { display: none; }
 .whatsapp-float svg { width: 29px; height: 29px; flex: 0 0 auto; }
 .whatsapp-float:hover, .whatsapp-float:focus-visible { color: var(--white); background: #20bd5a; box-shadow: 0 17px 40px rgba(20,96,55,.38); transform: translateY(-3px); }
@@ -598,7 +603,9 @@ footer p { margin: 8px 0 0; }
   .creator-details { width: min(100%, 380px); margin: 0 auto; }
   .creator-links { justify-items: center; }
   .footer-bottom { align-items: center; flex-direction: column; gap: 5px; }
-  .whatsapp-float { right: 14px; bottom: 14px; width: 58px; min-width: 58px; height: 58px; padding: 0; }
+  .social-float-dock { right: 14px; bottom: 14px; }
+  .instagram-float { width: 43px; height: 43px; }
+  .whatsapp-float { width: 58px; min-width: 58px; height: 58px; padding: 0; }
   .whatsapp-float-label { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
 }
 

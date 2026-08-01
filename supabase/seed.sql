@@ -6,7 +6,7 @@ with new_project as (
   returning id
 )
 insert into public.project_settings (project_id, key, value, is_public)
-select id, 'storefront', '{"currency":"EUR","location":"Palma del Río, Córdoba","commerce_enabled":false,"commerce_notice_enabled":true,"wallapop_available":true,"pickup_available":false,"physical_delivery":"home_delivery","digital_delivery":"email"}'::jsonb, true
+select id, 'storefront', '{"currency":"EUR","location":"Palma del Río, Córdoba","commerce_enabled":false,"commerce_notice_enabled":true,"wallapop_available":true,"instagram_url":"https://www.instagram.com/colorinespalma/","pickup_available":false,"physical_delivery":"home_delivery","digital_delivery":"email"}'::jsonb, true
 from new_project
 on conflict (project_id, key) do update set
   value = public.project_settings.value || excluded.value,

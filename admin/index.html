@@ -7,7 +7,7 @@
   <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#262329">
   <link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="admin.css?v=sam-admin-8">
+  <link rel="stylesheet" href="admin.css?v=sam-admin-9">
 </head>
 <body>
   <header class="topbar">
@@ -52,7 +52,7 @@
           <div class="panel-heading">
             <div>
               <p class="eyebrow">Configuración pública</p>
-              <h2>Logo, contacto, pagos y Wallapop</h2>
+              <h2>Logo, contacto y canales externos</h2>
               <p class="muted">Gestiona la imagen y los canales que verá el cliente. Los cambios se aplicarán en la tienda al volver a cargarla.</p>
             </div>
             <button class="secondary-button" type="submit">Guardar configuración</button>
@@ -86,6 +86,7 @@
             <label>Nombre visible<input id="contact-name" type="text" maxlength="80" placeholder="Por ejemplo: Javier"></label>
             <label>WhatsApp con prefijo<input id="contact-whatsapp" type="tel" inputmode="tel" maxlength="20" placeholder="34600000000"></label>
             <label>Correo electrónico<input id="contact-email" type="email" maxlength="160" placeholder="contacto@ejemplo.com"></label>
+            <label class="field-span-three">Enlace de Instagram<input id="instagram-url" type="url" inputmode="url" maxlength="500" placeholder="https://www.instagram.com/colorinespalma/"></label>
           </div>
           <div class="storefront-subheading">
             <p class="eyebrow">Pago y catálogo externo</p>
@@ -97,7 +98,7 @@
             <label class="field-span-two">Enlace del perfil de Wallapop<input id="wallapop-url" type="url" inputmode="url" maxlength="500" placeholder="https://es.wallapop.com/user/..."></label>
             <label class="settings-check field-span-three"><input id="commerce-notice-enabled" type="checkbox" checked> Mostrar al entrar el aviso de Bizum y Wallapop</label>
           </div>
-          <p class="field-help">WhatsApp y Bizum deben incluir el prefijo del país. La web copiará exactamente el número guardado aquí. Utiliza el enlace completo y público del perfil de Wallapop.</p>
+          <p class="field-help">WhatsApp y Bizum deben incluir el prefijo del país. La web copiará exactamente el número guardado aquí. Utiliza los enlaces completos y públicos de Instagram y Wallapop.</p>
           <p id="storefront-status" class="form-status" role="status"></p>
         </form>
       </section>
@@ -173,6 +174,6 @@
     </form>
   </dialog>
   <script src="../sam-settings.js?v=sam-admin-8"></script>
-  <script src="admin.js?v=sam-admin-8"></script>
+  <script src="admin.js?v=sam-admin-9"></script>
 </body>
 </html>

@@ -48,6 +48,7 @@ const imageSizeLimit = 25 * 1024 * 1024;
 const storageImageSizeLimit = 10 * 1024 * 1024;
 const acceptedImageTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif']);
 const defaultBrandLogoUrl = '../assets/logo.svg';
+const defaultInstagramUrl = 'https://www.instagram.com/colorinespalma/';
 
 function setStatus(element, message = '', isError = false) {
   element.textContent = message;
@@ -80,6 +81,22 @@ function normalizeWallapopUrl(value) {
     const url = new URL(rawUrl);
     const hostname = url.hostname.toLocaleLowerCase('es');
     if (url.protocol !== 'https:' || !(hostname === 'wallapop.com' || hostname.endsWith('.wallapop.com'))) {
+      return null;
+    }
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function normalizeInstagramUrl(value) {
+  const rawUrl = String(value || '').trim();
+  if (!rawUrl) return '';
+
+  try {
+    const url = new URL(rawUrl);
+    const hostname = url.hostname.toLocaleLowerCase('es');
+    if (url.protocol !== 'https:' || !(hostname === 'instagram.com' || hostname.endsWith('.instagram.com'))) {
       return null;
     }
     return url.toString();
@@ -602,6 +619,7 @@ function fillStorefrontForm() {
   $('#contact-name').value = value.contact_name || '';
   $('#contact-whatsapp').value = value.contact_whatsapp || '';
   $('#contact-email').value = value.contact_email || '';
+  $('#instagram-url').value = Object.hasOwn(value, 'instagram_url') ? value.instagram_url : defaultInstagramUrl;
   $('#bizum-phone').value = value.bizum_phone || '';
   $('#wallapop-url').value = value.wallapop_url || '';
   $('#commerce-notice-enabled').checked = value.commerce_notice_enabled !== false;
@@ -618,6 +636,7 @@ async function saveStorefront(event) {
   const contactName = $('#contact-name').value.trim();
   const contactWhatsapp = $('#contact-whatsapp').value.replace(/\D/g, '');
   const contactEmail = $('#contact-email').value.trim();
+  const instagramUrl = normalizeInstagramUrl($('#instagram-url').value);
   const bizumDigits = $('#bizum-phone').value.replace(/\D/g, '');
   const bizumPhone = bizumDigits ? `+${bizumDigits}` : '';
   const wallapopUrl = normalizeWallapopUrl($('#wallapop-url').value);
@@ -633,6 +652,10 @@ async function saveStorefront(event) {
   }
   if (bizumDigits && (bizumDigits.length < 8 || bizumDigits.length > 15)) {
     setStatus(storefrontStatus, 'Revisa el número de Bizum: debe tener entre 8 y 15 cifras.', true);
+    return;
+  }
+  if (instagramUrl === null) {
+    setStatus(storefrontStatus, 'El enlace debe ser una dirección HTTPS válida de Instagram.', true);
     return;
   }
   if (wallapopUrl === null) {
@@ -654,6 +677,7 @@ async function saveStorefront(event) {
       contact_name: contactName,
       contact_whatsapp: contactWhatsapp,
       contact_email: contactEmail,
+      instagram_url: instagramUrl,
       bizum_phone: bizumPhone,
       wallapop_url: wallapopUrl,
       wallapop_available: true,
@@ -678,6 +702,7 @@ async function saveStorefront(event) {
     settingsSaved = true;
     storefrontSetting = { key: 'storefront', value, is_public: true };
     $('#contact-whatsapp').value = contactWhatsapp;
+    $('#instagram-url').value = instagramUrl;
     $('#bizum-phone').value = bizumPhone;
     $('#wallapop-url').value = wallapopUrl;
     clearBrandLogoDraft();
@@ -689,7 +714,7 @@ async function saveStorefront(event) {
         console.warn('La configuración se guardó, pero no se pudo limpiar el logo anterior.', error);
       });
     }
-    setStatus(storefrontStatus, 'Logo, contacto, Bizum y Wallapop guardados. La tienda pública se actualizará al volver a cargar.');
+    setStatus(storefrontStatus, 'Logo, contacto, Instagram, Bizum y Wallapop guardados. La tienda pública se actualizará al volver a cargar.');
   } catch (error) {
     if (uploadedLogo && !settingsSaved) await deleteBrandLogo(uploadedLogo).catch(() => {});
     setStatus(storefrontStatus, error.message, true);

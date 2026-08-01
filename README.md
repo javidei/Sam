@@ -57,10 +57,10 @@ guardan en GitHub.
 
 Desde el mismo panel se configura el nombre de contacto, WhatsApp y correo del
 propietario. También se guardan en `project_settings.storefront` el número de Bizum, el
-enlace público de Wallapop y la preferencia que activa el aviso de entrada. La tienda
-pública utiliza esos datos para preparar consultas y mostrar los canales de compra sin
-tener que editar el código. La sesión se renueva de forma automática y todas las
-operaciones quedan protegidas mediante RLS.
+enlace público de Instagram, el enlace público de Wallapop y la preferencia que activa
+el aviso de entrada. La tienda pública utiliza esos datos para preparar consultas y
+mostrar los canales de compra sin tener que editar el código. La sesión se renueva de
+forma automática y todas las operaciones quedan protegidas mediante RLS.
 
 El logo también se mantiene desde Administración. La imagen se optimiza, se almacena en
 el bucket `sam-public` y su referencia se guarda como `brand_logo` dentro de

@@ -27,12 +27,14 @@ const formStatus = document.querySelector('#form-status');
 const contactSubmit = document.querySelector('#contact-submit');
 const contactNoteCopy = document.querySelector('#contact-note-copy');
 const ownerWhatsappLink = document.querySelector('#owner-whatsapp-link');
+const ownerInstagramLink = document.querySelector('#owner-instagram-link');
 const commerceSection = document.querySelector('#compra-y-pago');
 const commerceDialog = document.querySelector('#commerce-dialog');
 const commerceDialogClose = document.querySelector('#commerce-dialog-close');
 const commerceDialogConfirm = document.querySelector('#commerce-dialog-confirm');
 const defaultStorefrontSettings = Object.freeze({
   bizum_phone: '',
+  instagram_url: 'https://www.instagram.com/colorinespalma/',
   wallapop_available: true,
   commerce_notice_enabled: true
 });
@@ -526,6 +528,7 @@ function updateContactUI() {
   const whatsapp = String(storefrontSettings.contact_whatsapp || '').replace(/\D/g, '');
   const email = String(storefrontSettings.contact_email || '').trim();
   const ownerName = String(storefrontSettings.contact_name || 'el propietario').trim();
+  const instagramUrl = normalizeInstagramUrl(storefrontSettings.instagram_url);
 
   if (ownerWhatsappLink) {
     if (whatsapp) {
@@ -539,6 +542,16 @@ function updateContactUI() {
     }
   }
 
+  if (ownerInstagramLink) {
+    if (instagramUrl) {
+      ownerInstagramLink.href = instagramUrl;
+      ownerInstagramLink.hidden = false;
+    } else {
+      ownerInstagramLink.removeAttribute('href');
+      ownerInstagramLink.hidden = true;
+    }
+  }
+
   if (whatsapp) {
     contactSubmit.textContent = 'Escribir por WhatsApp';
     contactNoteCopy.textContent = `La consulta se enviará por WhatsApp a ${ownerName}. Podrás revisar el mensaje antes de enviarlo.`;
@@ -547,6 +560,22 @@ function updateContactUI() {
     contactNoteCopy.textContent = `La consulta se preparará por correo para ${ownerName}.`;
   } else {
     contactSubmit.textContent = 'Preparar solicitud';
+  }
+}
+
+function normalizeInstagramUrl(value) {
+  const rawUrl = String(value || '').trim();
+  if (!rawUrl) return '';
+
+  try {
+    const url = new URL(rawUrl);
+    const hostname = url.hostname.toLocaleLowerCase('es');
+    if (url.protocol !== 'https:' || !(hostname === 'instagram.com' || hostname.endsWith('.instagram.com'))) {
+      return '';
+    }
+    return url.toString();
+  } catch {
+    return '';
   }
 }
 
