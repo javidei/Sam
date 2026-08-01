@@ -446,6 +446,7 @@ button { cursor: pointer; }
 .commerce-action--wallapop { color: #073f38; background: #79e4d5; }
 .commerce-action:hover, .commerce-action:focus-visible { filter: brightness(.94); transform: translateY(-1px); }
 .commerce-status { min-height: 17px; margin-top: 7px; display: block; color: #16635f; font-size: 10px; font-weight: 750; text-align: center; }
+.commerce-pending { margin-top: auto; padding: 13px 15px; display: block; color: #245e57; background: rgba(255,255,255,.62); border: 1px dashed rgba(7,63,56,.22); border-radius: 14px; font-size: 11px; font-weight: 850; line-height: 1.35; text-align: center; }
 
 .commerce-dialog { width: min(780px, calc(100% - 28px)); max-height: calc(100dvh - 28px); padding: 0; overflow: auto; color: var(--ink); background: var(--paper); border: 0; border-radius: 30px; box-shadow: 0 40px 110px rgba(20,16,21,.38); }
 .commerce-dialog::backdrop { background: rgba(28,23,29,.68); backdrop-filter: blur(7px); }
@@ -465,6 +466,7 @@ button { cursor: pointer; }
 .commerce-dialog-card strong { margin-top: 6px; display: block; font-size: 28px; line-height: 1.1; }
 .commerce-dialog-card button, .commerce-dialog-card a { min-height: 42px; margin-top: 21px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; color: var(--white); background: var(--ink); border: 0; border-radius: 999px; font-size: 11px; font-weight: 950; text-align: center; }
 .commerce-dialog-card span[data-bizum-status] { min-height: 15px; margin-top: 6px; color: #16635f; font-size: 9px; font-weight: 750; text-align: center; }
+.commerce-dialog-card .commerce-pending { margin-top: 21px; color: #245e57; background: rgba(255,255,255,.65); }
 .commerce-dialog-confirm { min-height: 48px; margin: 22px auto 0; padding: 0 22px; display: flex; align-items: center; justify-content: center; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 999px; font-size: 12px; font-weight: 900; }
 
 .contact-section { padding: 120px 0; display: grid; grid-template-columns: .9fr 1.1fr; gap: 70px; }

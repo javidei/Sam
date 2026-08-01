@@ -12,9 +12,9 @@
   <meta property="og:url" content="https://javidei.github.io/Sam/">
   <link rel="canonical" href="https://javidei.github.io/Sam/">
   <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=sam-github-8">
-  <script src="sam-settings.js?v=sam-github-8" defer></script>
-  <script src="app.js?v=sam-github-8" defer></script>
+  <link rel="stylesheet" href="styles.css?v=sam-github-9">
+  <script src="sam-settings.js?v=sam-github-9" defer></script>
+  <script src="app.js?v=sam-github-9" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#contenido">Saltar al contenido</a>
@@ -261,10 +261,10 @@
           <div>
             <p>Pagos disponibles</p>
             <h3>Haz tu Bizum al número de SAM</h3>
-            <strong class="commerce-phone" data-bizum-phone></strong>
+            <strong class="commerce-phone" data-bizum-phone>+34622854155</strong>
             <p class="commerce-help">Confirma antes con SAM el importe y el concepto de tu encargo.</p>
           </div>
-          <button class="commerce-action commerce-action--bizum" type="button" data-copy-bizum>Copiar número</button>
+          <button class="commerce-action commerce-action--bizum" type="button" data-copy-bizum>Copiar +34622854155</button>
           <span class="commerce-status" data-bizum-status aria-live="polite"></span>
         </article>
         <article class="commerce-card commerce-card--wallapop" data-wallapop-card hidden>
@@ -275,6 +275,7 @@
             <p class="commerce-help">Abre el perfil de SAM para consultar sus anuncios, fotos, precios y disponibilidad.</p>
           </div>
           <a class="commerce-action commerce-action--wallapop" data-wallapop-link target="_blank" rel="noopener noreferrer">Ver perfil en Wallapop <span aria-hidden="true">↗</span></a>
+          <span class="commerce-pending" data-wallapop-pending>También tenemos artículos en Wallapop. Solicita el enlace directo mientras termina de configurarse.</span>
         </article>
       </div>
     </section>
@@ -368,14 +369,15 @@
         <article class="commerce-dialog-card commerce-dialog-card--bizum" data-bizum-card hidden>
           <img src="assets/bizum.svg" alt="Bizum" width="122" height="36">
           <p>Envía el pago acordado a:</p>
-          <strong data-bizum-phone></strong>
-          <button type="button" data-copy-bizum>Copiar número</button>
+          <strong data-bizum-phone>+34622854155</strong>
+          <button type="button" data-copy-bizum>Copiar +34622854155</button>
           <span data-bizum-status aria-live="polite"></span>
         </article>
         <article class="commerce-dialog-card commerce-dialog-card--wallapop" data-wallapop-card hidden>
           <img src="assets/wallapop.svg" alt="Wallapop" width="151" height="58">
           <p>Consulta los artículos publicados por SAM.</p>
           <a data-wallapop-link target="_blank" rel="noopener noreferrer">Ir al perfil <span aria-hidden="true">↗</span></a>
+          <span class="commerce-pending" data-wallapop-pending>También tenemos artículos en Wallapop. Solicita el enlace directo mientras termina de configurarse.</span>
         </article>
       </div>
       <button class="commerce-dialog-confirm" id="commerce-dialog-confirm" type="button">Entendido, ver la tienda</button>

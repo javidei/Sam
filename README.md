@@ -62,13 +62,15 @@ pública utiliza esos datos para preparar consultas y mostrar los canales de com
 tener que editar el código. La sesión se renueva de forma automática y todas las
 operaciones quedan protegidas mediante RLS.
 
-El aviso de Bizum y Wallapop se adapta a escritorio y móvil y se muestra una vez por
-sesión del navegador. La información permanece visible en la sección «Pago y venta» de
-la tienda. El número de Bizum puede copiarse con un botón y el perfil de Wallapop se abre
-en una pestaña nueva.
+El aviso de Bizum y Wallapop se adapta a escritorio y móvil y se muestra en cada nueva
+entrada a la página. La información permanece visible en la sección «Pago y venta» de
+la tienda. El propio botón muestra y copia exactamente `+34622854155`, con un método
+alternativo para navegadores que bloqueen la API moderna del portapapeles. El perfil de
+Wallapop se abre en una pestaña nueva cuando su URL pública está configurada.
 
-Los datos definitivos de pago y del perfil externo no se inventan: deben añadirse desde
-Administración cuando se confirmen el número de Bizum y la URL pública de Wallapop.
+El número de Bizum confirmado queda también como valor seguro de reserva. La URL pública
+de Wallapop debe añadirse desde Administración; mientras falte, la web informa de que la
+cuenta existe sin inventar un enlace.
 
 Los logotipos vectoriales de Bizum y Wallapop proceden de Wikimedia Commons y se usan
 únicamente para identificar sus respectivos servicios.

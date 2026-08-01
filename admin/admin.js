@@ -475,7 +475,7 @@ function fillStorefrontForm() {
   $('#contact-name').value = value.contact_name || '';
   $('#contact-whatsapp').value = value.contact_whatsapp || '';
   $('#contact-email').value = value.contact_email || '';
-  $('#bizum-phone').value = value.bizum_phone || '';
+  $('#bizum-phone').value = value.bizum_phone || '+34622854155';
   $('#wallapop-url').value = value.wallapop_url || '';
   $('#commerce-notice-enabled').checked = value.commerce_notice_enabled !== false;
 
@@ -519,6 +519,7 @@ async function saveStorefront(event) {
     contact_email: contactEmail,
     bizum_phone: bizumPhone,
     wallapop_url: wallapopUrl,
+    wallapop_available: true,
     commerce_notice_enabled: commerceNoticeEnabled
   };
   setStatus(storefrontStatus, 'Guardando contacto…');

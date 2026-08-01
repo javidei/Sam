@@ -30,12 +30,15 @@ const commerceSection = document.querySelector('#compra-y-pago');
 const commerceDialog = document.querySelector('#commerce-dialog');
 const commerceDialogClose = document.querySelector('#commerce-dialog-close');
 const commerceDialogConfirm = document.querySelector('#commerce-dialog-confirm');
+const defaultStorefrontSettings = Object.freeze({
+  bizum_phone: '+34622854155',
+  wallapop_available: true,
+  commerce_notice_enabled: true
+});
 let catalogCards = [...document.querySelectorAll('.catalog-card')];
 let activeFilter = 'all';
-let storefrontSettings = {};
+let storefrontSettings = { ...defaultStorefrontSettings };
 let commerceNoticeScheduled = false;
-
-const commerceNoticeSessionKey = 'sam-commerce-notice-v1';
 
 function normalize(value) {
   return String(value || '')
@@ -526,42 +529,29 @@ function normalizeWallapopUrl(value) {
   }
 }
 
-function nationalBizumNumber(value) {
+function normalizeBizumNumber(value) {
   const digits = String(value || '').replace(/\D/g, '');
-  return digits.length === 11 && digits.startsWith('34') ? digits.slice(2) : digits;
+  if (digits.length === 9) return `+34${digits}`;
+  if (digits.length === 11 && digits.startsWith('34')) return `+${digits}`;
+  if (digits.length >= 8 && digits.length <= 15) return `+${digits}`;
+  return '';
 }
 
 function formatPhoneNumber(value) {
-  const digits = nationalBizumNumber(value);
-  if (digits.length === 9) return digits.replace(/(\d{3})(?=\d)/g, '$1 ').trim();
-  return digits.replace(/(\d{3})(?=\d)/g, '$1 ').trim();
-}
-
-function commerceNoticeSeen() {
-  try {
-    return sessionStorage.getItem(commerceNoticeSessionKey) === 'seen';
-  } catch {
-    return false;
-  }
-}
-
-function markCommerceNoticeSeen() {
-  try {
-    sessionStorage.setItem(commerceNoticeSessionKey, 'seen');
-  } catch {
-    // El aviso sigue funcionando aunque el navegador bloquee sessionStorage.
-  }
+  return normalizeBizumNumber(value);
 }
 
 function closeCommerceDialog() {
-  if (commerceDialog?.open) commerceDialog.close();
+  if (!commerceDialog?.open) return;
+  if (typeof commerceDialog.close === 'function') commerceDialog.close();
+  else commerceDialog.removeAttribute('open');
 }
 
 function showCommerceDialog() {
-  if (!commerceDialog || commerceDialog.open || commerceNoticeSeen()) return;
+  if (!commerceDialog || commerceDialog.open) return;
   try {
-    commerceDialog.showModal();
-    markCommerceNoticeSeen();
+    if (typeof commerceDialog.showModal === 'function') commerceDialog.showModal();
+    else commerceDialog.setAttribute('open', '');
     commerceDialogClose?.focus();
   } catch (error) {
     console.warn('No se ha podido abrir el aviso de compra.', error);
@@ -569,11 +559,13 @@ function showCommerceDialog() {
 }
 
 function updateCommerceUI() {
-  const bizumPhone = nationalBizumNumber(storefrontSettings.bizum_phone);
+  const bizumPhone = normalizeBizumNumber(storefrontSettings.bizum_phone)
+    || defaultStorefrontSettings.bizum_phone;
   const wallapopUrl = normalizeWallapopUrl(storefrontSettings.wallapop_url);
-  const hasBizum = bizumPhone.length >= 8;
-  const hasWallapop = Boolean(wallapopUrl);
-  const hasSalesChannel = hasBizum || hasWallapop;
+  const hasBizum = Boolean(bizumPhone);
+  const hasWallapopAccount = storefrontSettings.wallapop_available !== false;
+  const hasWallapopLink = Boolean(wallapopUrl);
+  const hasSalesChannel = hasBizum || hasWallapopAccount;
 
   if (commerceSection) commerceSection.hidden = !hasSalesChannel;
   document.querySelectorAll('[data-commerce-nav]').forEach((link) => {
@@ -584,54 +576,79 @@ function updateCommerceUI() {
     card.hidden = !hasBizum;
   });
   document.querySelectorAll('[data-wallapop-card]').forEach((card) => {
-    card.hidden = !hasWallapop;
+    card.hidden = !hasWallapopAccount;
   });
   document.querySelectorAll('[data-bizum-phone]').forEach((element) => {
     element.textContent = formatPhoneNumber(bizumPhone);
   });
+  document.querySelectorAll('[data-copy-bizum]').forEach((button) => {
+    const label = `Copiar ${formatPhoneNumber(bizumPhone)}`;
+    button.textContent = label;
+    button.dataset.copyLabel = label;
+  });
   document.querySelectorAll('[data-wallapop-link]').forEach((link) => {
-    if (hasWallapop) link.href = wallapopUrl;
+    link.hidden = !hasWallapopLink;
+    if (hasWallapopLink) link.href = wallapopUrl;
     else link.removeAttribute('href');
   });
+  document.querySelectorAll('[data-wallapop-pending]').forEach((message) => {
+    message.hidden = hasWallapopLink;
+  });
   document.querySelectorAll('.commerce-options, .commerce-dialog-options').forEach((container) => {
-    container.classList.toggle('is-single', hasBizum !== hasWallapop);
+    container.classList.toggle('is-single', hasBizum !== hasWallapopAccount);
   });
 
   const noticeEnabled = storefrontSettings.commerce_notice_enabled !== false;
-  if (hasSalesChannel && noticeEnabled && !commerceNoticeScheduled && !commerceNoticeSeen()) {
+  if (hasSalesChannel && noticeEnabled && !commerceNoticeScheduled) {
     commerceNoticeScheduled = true;
     window.setTimeout(showCommerceDialog, 350);
   }
 }
 
+function legacyCopyText(text) {
+  const helper = document.createElement('textarea');
+  helper.value = text;
+  helper.setAttribute('readonly', '');
+  helper.style.position = 'fixed';
+  helper.style.left = '-9999px';
+  helper.style.top = '0';
+  document.body.append(helper);
+  helper.focus();
+  helper.select();
+  helper.setSelectionRange(0, helper.value.length);
+  const copied = document.execCommand('copy');
+  helper.remove();
+  if (!copied) throw new Error('El navegador no permitió copiar el número.');
+}
+
+async function writeClipboardText(text) {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch {
+      // Algunos navegadores bloquean Clipboard API aunque esté disponible.
+    }
+  }
+  legacyCopyText(text);
+}
+
 async function copyBizumNumber(button) {
-  const bizumPhone = nationalBizumNumber(storefrontSettings.bizum_phone);
-  if (!bizumPhone) return;
+  const bizumPhone = normalizeBizumNumber(storefrontSettings.bizum_phone)
+    || defaultStorefrontSettings.bizum_phone;
 
   try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(bizumPhone);
-    } else {
-      const helper = document.createElement('textarea');
-      helper.value = bizumPhone;
-      helper.setAttribute('readonly', '');
-      helper.style.position = 'fixed';
-      helper.style.opacity = '0';
-      document.body.append(helper);
-      helper.select();
-      document.execCommand('copy');
-      helper.remove();
-    }
-
-    const originalText = button.textContent;
+    await writeClipboardText(bizumPhone);
     button.textContent = 'Número copiado ✓';
     document.querySelectorAll('[data-bizum-status]').forEach((status) => {
-      status.textContent = 'Ya puedes pegarlo en la app de tu banco.';
+      status.textContent = `${bizumPhone} copiado. Ya puedes pegarlo en la app de tu banco.`;
     });
-    window.setTimeout(() => { button.textContent = originalText; }, 2200);
+    window.setTimeout(() => {
+      button.textContent = button.dataset.copyLabel || `Copiar ${bizumPhone}`;
+    }, 2200);
   } catch {
     document.querySelectorAll('[data-bizum-status]').forEach((status) => {
-      status.textContent = `Copia manualmente el número ${formatPhoneNumber(bizumPhone)}.`;
+      status.textContent = `Copia manualmente el número ${bizumPhone}.`;
     });
   }
 }
@@ -672,7 +689,11 @@ async function loadCatalogFromDatabase() {
       }, config)
     ]);
 
-    storefrontSettings = settingRows[0]?.value || {};
+    storefrontSettings = {
+      ...defaultStorefrontSettings,
+      ...(settingRows[0]?.value || {}),
+      bizum_phone: settingRows[0]?.value?.bizum_phone || defaultStorefrontSettings.bizum_phone
+    };
     updateContactUI();
     updateCommerceUI();
     if (!products.length) return;
@@ -690,6 +711,7 @@ async function loadCatalogFromDatabase() {
 enhanceFallbackCatalog();
 bindServiceLinks();
 updateCatalog();
+updateCommerceUI();
 loadCatalogFromDatabase();
 
 document.querySelectorAll('[data-copy-bizum]').forEach((button) => {
