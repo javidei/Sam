@@ -1,25 +1,25 @@
 # SAM
 
-Web pública y base de administración para SAM: impresión, productos personalizados, artículos seleccionados y servicios digitales.
+Web pública de SAM: impresión, productos personalizados, artículos y servicios digitales.
 
-## Estado actual
+## Publicación
 
-- Portada comercial responsive con catálogo, filtros y búsqueda.
-- Zona `/admin` separada y preparada para el futuro CRUD.
-- Migración Supabase versionada con proyectos, usuarios, permisos, categorías, productos, variantes, archivos, inventario, auditoría y RLS.
-- Storage público/privado organizado bajo `sam/`.
-- Datos de ejemplo en la interfaz hasta conectar un proyecto Supabase.
+El proyecto es una web estática sin dependencias de ChatGPT Sites. Se publica con GitHub Pages desde la rama `main` y la raíz del repositorio:
 
-## Preparación de Supabase
+`https://javidei.github.io/Sam/`
 
-1. Crear un proyecto de Supabase para la plataforma de Javier.
-2. Ejecutar `supabase/migrations/202608010001_sam_core.sql`.
-3. Ejecutar `supabase/seed.sql`.
-4. Copiar `.env.example` a `.env.local` y completar URL y claves.
-5. Crear el primer usuario mediante Supabase Auth y asociarlo como `owner` de SAM en `project_members`.
+Todas las rutas son relativas para funcionar correctamente bajo `/Sam/`.
 
-La clave `SUPABASE_SERVICE_ROLE_KEY` nunca debe exponerse al navegador ni guardarse en GitHub.
+## Estructura
 
-## Evolución a tienda online
+- `index.html`: web pública, catálogo inicial y formulario para preparar encargos.
+- `styles.css`: diseño responsive.
+- `app.js`: menú móvil, búsqueda, filtros y preparación de solicitudes.
+- `admin/`: ruta separada para la futura administración.
+- `assets/`: identidad gráfica local.
 
-La base ya separa productos y variantes, usa importes en céntimos y conserva moneda. La fase de venta añadirá clientes, direcciones, carritos, pedidos, líneas de pedido, pagos, envíos, descuentos, impuestos y reserva de stock. Los pagos se crearán desde servidor y se confirmarán mediante webhooks.
+## Próxima fase
+
+El panel de `admin/` es informativo hasta conectar Supabase. La conexión deberá incorporar autenticación, políticas RLS, productos, variantes, precios, stock e imágenes antes de permitir cambios reales.
+
+Los datos definitivos de contacto no se han inventado: deben añadirse cuando se confirmen el teléfono de WhatsApp y el correo de SAM.

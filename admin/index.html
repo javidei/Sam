@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Administración · SAM</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#262329">
+  <link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <header>
+    <a href="../" aria-label="Volver a SAM"><img src="../assets/logo.svg" alt="SAM" width="150" height="72"></a>
+    <a class="back" href="../">Ver web pública <span aria-hidden="true">→</span></a>
+  </header>
+
+  <main>
+    <section class="admin-hero">
+      <div>
+        <p>Área de administración</p>
+        <h1>La gestión de SAM,<br>preparada para conectarse.</h1>
+        <p class="lead">Esta ruta está separada de la tienda pública. El acceso real, el CRUD y las imágenes se activarán al conectar Supabase.</p>
+      </div>
+      <span class="status">Sin conexión a base de datos</span>
+    </section>
+
+    <section class="notice">
+      <span>i</span>
+      <div>
+        <strong>No es un panel público operativo.</strong>
+        <p>No se muestran formularios inseguros ni datos ficticios. Antes de gestionar productos deberá existir autenticación y políticas RLS.</p>
+      </div>
+    </section>
+
+    <section class="modules" aria-label="Módulos previstos">
+      <article>
+        <div class="icon icon--pink">▦</div>
+        <span>Catálogo</span>
+        <h2>Productos y servicios</h2>
+        <p>Nombre, descripción, categoría, estado, visibilidad y orden.</p>
+        <b>Pendiente de Supabase</b>
+      </article>
+      <article>
+        <div class="icon icon--cyan">◇</div>
+        <span>Opciones</span>
+        <h2>Variantes y precios</h2>
+        <p>Formatos, colores, acabados, SKU, precio y disponibilidad.</p>
+        <b>Pendiente de Supabase</b>
+      </article>
+      <article>
+        <div class="icon icon--yellow">▤</div>
+        <span>Inventario</span>
+        <h2>Stock y movimientos</h2>
+        <p>Existencias, ajustes, reservas y un histórico de cambios.</p>
+        <b>Pendiente de Supabase</b>
+      </article>
+      <article>
+        <div class="icon icon--violet">◫</div>
+        <span>Multimedia</span>
+        <h2>Imágenes y archivos</h2>
+        <p>Galerías públicas y documentos privados organizados por producto.</p>
+        <b>Pendiente de Supabase</b>
+      </article>
+    </section>
+
+    <section class="roadmap">
+      <div>
+        <p>Siguiente fase</p>
+        <h2>Qué falta para activar la gestión</h2>
+      </div>
+      <ol>
+        <li><span>1</span>Crear o elegir el proyecto de Supabase</li>
+        <li><span>2</span>Aplicar las migraciones y políticas de seguridad</li>
+        <li><span>3</span>Configurar la cuenta administradora</li>
+        <li><span>4</span>Conectar catálogo, imágenes y stock al panel</li>
+      </ol>
+    </section>
+  </main>
+</body>
+</html>
