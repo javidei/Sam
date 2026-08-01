@@ -267,6 +267,47 @@ alter table public.product_images enable row level security;
 alter table public.inventory_movements enable row level security;
 alter table public.audit_logs enable row level security;
 
+-- El proyecto se creó sin exposición automática de tablas. Estos permisos hacen
+-- explícita la superficie de la Data API; RLS sigue decidiendo qué filas se ven.
+revoke all on table
+  public.projects,
+  public.profiles,
+  public.project_members,
+  public.project_settings,
+  public.catalog_categories,
+  public.catalog_products,
+  public.product_variants,
+  public.files,
+  public.product_images,
+  public.inventory_movements,
+  public.audit_logs
+from anon, authenticated;
+
+grant select on table
+  public.projects,
+  public.project_settings,
+  public.catalog_categories,
+  public.catalog_products,
+  public.product_variants,
+  public.files,
+  public.product_images
+to anon;
+
+grant select, update on table public.projects, public.profiles to authenticated;
+grant select, insert, update, delete on table
+  public.project_members,
+  public.project_settings,
+  public.catalog_categories,
+  public.catalog_products,
+  public.product_variants,
+  public.files,
+  public.product_images
+to authenticated;
+grant select on table public.inventory_movements, public.audit_logs to authenticated;
+
+revoke all on function public.has_project_role(uuid, public.project_role[]) from public;
+grant execute on function public.has_project_role(uuid, public.project_role[]) to anon, authenticated;
+
 create policy "active projects are public" on public.projects for select using (status = 'active' or public.has_project_role(id, array['owner','admin','editor','viewer']::public.project_role[]));
 create policy "owners manage projects" on public.projects for update using (public.has_project_role(id, array['owner']::public.project_role[])) with check (public.has_project_role(id, array['owner']::public.project_role[]));
 create policy "profiles read own" on public.profiles for select using (id = auth.uid());

@@ -25,10 +25,10 @@ Todas las rutas son relativas para funcionar correctamente bajo `/Sam/`.
 1. Crea un proyecto vacío en Supabase.
 2. Ejecuta `supabase/migrations/202608010001_sam_core.sql` en el SQL Editor.
 3. Ejecuta `supabase/seed.sql`.
-4. Copia la URL del proyecto y la clave pública anónima en `sam-settings.js`.
+4. Copia la URL del proyecto y la clave publicable en `sam-settings.js`.
 5. Crea el primer usuario en Authentication y asígnalo como `owner` en `project_members`.
 
-La tienda consulta Supabase mediante su API REST y RLS. Si la conexión aún no está
+La tienda consulta Supabase mediante su API REST, permisos mínimos y RLS. Si la conexión aún no está
 configurada o falla, conserva el catálogo local de reserva.
 
 La clave `service_role` es privada: no debe añadirse a `sam-settings.js`, al navegador ni

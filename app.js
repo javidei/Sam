@@ -233,8 +233,7 @@ async function apiGet(resource, params, config) {
   Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
   const response = await fetch(url, {
     headers: {
-      apikey: config.supabaseAnonKey,
-      Authorization: `Bearer ${config.supabaseAnonKey}`
+      apikey: config.supabasePublishableKey
     }
   });
 
@@ -246,9 +245,11 @@ async function loadCatalogFromDatabase() {
   const rawConfig = window.SAM_CONFIG || {};
   const config = {
     supabaseUrl: String(rawConfig.supabaseUrl || '').replace(/\/$/, ''),
-    supabaseAnonKey: String(rawConfig.supabaseAnonKey || '')
+    supabasePublishableKey: String(
+      rawConfig.supabasePublishableKey || rawConfig.supabaseAnonKey || ''
+    )
   };
-  if (!config.supabaseUrl || !config.supabaseAnonKey || !catalogGrid) return;
+  if (!config.supabaseUrl || !config.supabasePublishableKey || !catalogGrid) return;
 
   catalogGrid.setAttribute('aria-busy', 'true');
   try {
