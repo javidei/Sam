@@ -517,9 +517,9 @@ footer p { margin: 8px 0 0; }
   .header-inner { width: min(100% - 28px, var(--max)); min-height: 76px; grid-template-columns: 1fr auto; }
   .brand { width: 78px; }
   .menu-toggle { display: block; }
-  .nav { position: absolute; top: 76px; right: 0; left: 0; padding: 12px 20px 22px; display: none; align-items: stretch; background: var(--paper); border-bottom: 1px solid var(--line); box-shadow: 0 20px 30px rgba(38,35,41,.08); }
+  .nav { position: absolute; top: 76px; right: 0; left: 0; width: 100%; padding: 12px 20px 22px; display: none; grid-template-columns: minmax(0, 1fr); align-items: stretch; justify-content: stretch; justify-items: stretch; gap: 0; background: var(--paper); border-bottom: 1px solid var(--line); box-shadow: 0 20px 30px rgba(38,35,41,.08); }
   .nav.is-open { display: grid; }
-  .nav a { padding: 13px 2px; border-bottom: 1px solid var(--line); }
+  .nav a { width: 100%; padding: 15px 2px; border-bottom: 1px solid var(--line); text-align: left; }
   .nav a:last-child { border-bottom: 0; }
   .nav a::after { display: none; }
 

@@ -475,7 +475,7 @@ function fillStorefrontForm() {
   $('#contact-name').value = value.contact_name || '';
   $('#contact-whatsapp').value = value.contact_whatsapp || '';
   $('#contact-email').value = value.contact_email || '';
-  $('#bizum-phone').value = value.bizum_phone || '+34622854155';
+  $('#bizum-phone').value = value.bizum_phone || '';
   $('#wallapop-url').value = value.wallapop_url || '';
   $('#commerce-notice-enabled').checked = value.commerce_notice_enabled !== false;
 
@@ -491,7 +491,8 @@ async function saveStorefront(event) {
   const contactName = $('#contact-name').value.trim();
   const contactWhatsapp = $('#contact-whatsapp').value.replace(/\D/g, '');
   const contactEmail = $('#contact-email').value.trim();
-  const bizumPhone = $('#bizum-phone').value.replace(/\D/g, '');
+  const bizumDigits = $('#bizum-phone').value.replace(/\D/g, '');
+  const bizumPhone = bizumDigits ? `+${bizumDigits}` : '';
   const wallapopUrl = normalizeWallapopUrl($('#wallapop-url').value);
   const commerceNoticeEnabled = $('#commerce-notice-enabled').checked;
 
@@ -503,7 +504,7 @@ async function saveStorefront(event) {
     setStatus(storefrontStatus, 'Revisa el WhatsApp: debe incluir el prefijo de país y tener entre 8 y 15 cifras.', true);
     return;
   }
-  if (bizumPhone && (bizumPhone.length < 8 || bizumPhone.length > 15)) {
+  if (bizumDigits && (bizumDigits.length < 8 || bizumDigits.length > 15)) {
     setStatus(storefrontStatus, 'Revisa el número de Bizum: debe tener entre 8 y 15 cifras.', true);
     return;
   }

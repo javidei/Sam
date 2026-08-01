@@ -31,7 +31,7 @@ const commerceDialog = document.querySelector('#commerce-dialog');
 const commerceDialogClose = document.querySelector('#commerce-dialog-close');
 const commerceDialogConfirm = document.querySelector('#commerce-dialog-confirm');
 const defaultStorefrontSettings = Object.freeze({
-  bizum_phone: '+34622854155',
+  bizum_phone: '',
   wallapop_available: true,
   commerce_notice_enabled: true
 });
@@ -559,8 +559,7 @@ function showCommerceDialog() {
 }
 
 function updateCommerceUI() {
-  const bizumPhone = normalizeBizumNumber(storefrontSettings.bizum_phone)
-    || defaultStorefrontSettings.bizum_phone;
+  const bizumPhone = normalizeBizumNumber(storefrontSettings.bizum_phone);
   const wallapopUrl = normalizeWallapopUrl(storefrontSettings.wallapop_url);
   const hasBizum = Boolean(bizumPhone);
   const hasWallapopAccount = storefrontSettings.wallapop_available !== false;
@@ -634,8 +633,8 @@ async function writeClipboardText(text) {
 }
 
 async function copyBizumNumber(button) {
-  const bizumPhone = normalizeBizumNumber(storefrontSettings.bizum_phone)
-    || defaultStorefrontSettings.bizum_phone;
+  const bizumPhone = normalizeBizumNumber(storefrontSettings.bizum_phone);
+  if (!bizumPhone) return;
 
   try {
     await writeClipboardText(bizumPhone);
@@ -691,8 +690,7 @@ async function loadCatalogFromDatabase() {
 
     storefrontSettings = {
       ...defaultStorefrontSettings,
-      ...(settingRows[0]?.value || {}),
-      bizum_phone: settingRows[0]?.value?.bizum_phone || defaultStorefrontSettings.bizum_phone
+      ...(settingRows[0]?.value || {})
     };
     updateContactUI();
     updateCommerceUI();

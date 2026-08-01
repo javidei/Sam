@@ -64,13 +64,11 @@ operaciones quedan protegidas mediante RLS.
 
 El aviso de Bizum y Wallapop se adapta a escritorio y móvil y se muestra en cada nueva
 entrada a la página. La información permanece visible en la sección «Pago y venta» de
-la tienda. El propio botón muestra y copia exactamente `+34622854155`, con un método
-alternativo para navegadores que bloqueen la API moderna del portapapeles. El perfil de
-Wallapop se abre en una pestaña nueva cuando su URL pública está configurada.
-
-El número de Bizum confirmado queda también como valor seguro de reserva. La URL pública
-de Wallapop debe añadirse desde Administración; mientras falte, la web informa de que la
-cuenta existe sin inventar un enlace.
+la tienda. El propio botón muestra y copia exactamente el número guardado en Supabase,
+con un método alternativo para navegadores que bloqueen la API moderna del portapapeles.
+Si no hay número configurado, la opción de Bizum permanece oculta. El perfil de Wallapop
+se abre en una pestaña nueva cuando su URL pública está configurada; mientras falte, la
+web informa de que la cuenta existe sin inventar un enlace.
 
 Los logotipos vectoriales de Bizum y Wallapop proceden de Wikimedia Commons y se usan
 únicamente para identificar sus respectivos servicios.
