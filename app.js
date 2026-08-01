@@ -190,7 +190,7 @@ function getActionLabel(product, price, availability) {
   if (availability.state === 'out') return 'Consultar reposición';
   if (price.mode === 'quote') return 'Pedir presupuesto';
   if (price.mode === 'from') return 'Consultar opciones';
-  if (product.requires_quote) return 'Consultar otro servicio';
+  if (product.requires_quote) return 'Consultar con la tienda';
   return 'Me interesa';
 }
 
