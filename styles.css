@@ -21,14 +21,21 @@
 * { box-sizing: border-box; }
 
 html {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-x: clip;
   scroll-behavior: smooth;
   scroll-padding-top: 118px;
 }
 
 body {
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
   margin: 0;
   overflow-x: hidden;
+  overflow-x: clip;
   color: var(--ink);
   background:
     radial-gradient(circle at 4% 9%, rgba(222, 54, 125, .075), transparent 25rem),
@@ -217,7 +224,7 @@ button { cursor: pointer; }
 .hero-points { padding: 0; margin: 28px 0 0; display: flex; flex-wrap: wrap; gap: 10px 22px; list-style: none; color: var(--muted); font-size: 13px; font-weight: 700; }
 .hero-points span { color: var(--green); font-weight: 950; }
 
-.hero-art { position: relative; min-height: 520px; }
+.hero-art { --hero-scale: 1; position: relative; min-width: 0; max-width: 100%; min-height: 520px; }
 .hero-art::before {
   content: "";
   position: absolute;
@@ -510,6 +517,8 @@ footer p { margin: 8px 0 0; }
 
 .reveal { opacity: 0; transform: translateY(18px); transition: opacity .55s ease, transform .55s ease; }
 .reveal.is-visible { opacity: 1; transform: translateY(0); }
+.hero-art.reveal { transform: translateY(18px) scale(var(--hero-scale)); }
+.hero-art.reveal.is-visible { transform: translateY(0) scale(var(--hero-scale)); }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -523,7 +532,7 @@ footer p { margin: 8px 0 0; }
   .nav { justify-content: flex-end; }
   .hero { grid-template-columns: minmax(0, 1.08fr) minmax(360px, .92fr); min-height: 620px; padding-top: 65px; gap: 24px; }
   .hero h1 { font-size: clamp(60px, 7.8vw, 78px); }
-  .hero-art { min-height: 460px; transform: scale(.84); transform-origin: center; }
+  .hero-art { --hero-scale: .84; min-height: 460px; transform-origin: center; }
   .service-grid { grid-template-columns: 1fr 1fr; }
   .service-card:last-child { grid-column: 1 / -1; min-height: 350px; }
   .catalog-toolbar { align-items: flex-start; flex-direction: column; }
@@ -545,16 +554,16 @@ footer p { margin: 8px 0 0; }
   .nav a:last-child { border-bottom: 0; }
   .nav a::after { display: none; }
 
-  .hero { width: calc(100% - 32px); min-height: auto; padding: 65px 0 55px; grid-template-columns: 1fr; gap: 28px; }
+  .hero { width: calc(100% - 32px); min-width: 0; min-height: auto; padding: 65px 0 55px; overflow: clip; grid-template-columns: minmax(0, 1fr); gap: 28px; }
   .hero h1 { font-size: clamp(58px, 18vw, 82px); }
   .hero-lead { margin-top: 28px; font-size: 17px; }
   .hero-actions .button { width: 100%; }
   .hero-art {
+    --hero-scale: .82;
     width: min(100%, 520px);
     min-height: 430px;
     margin: -20px auto -50px;
     justify-self: center;
-    transform: scale(.82);
     transform-origin: center;
   }
 
@@ -610,7 +619,7 @@ footer p { margin: 8px 0 0; }
   .creator-details { width: min(100%, 380px); margin: 0 auto; }
   .creator-links { justify-items: center; }
   .footer-bottom { align-items: center; flex-direction: column; gap: 5px; }
-  .social-float-dock { right: 14px; bottom: 14px; }
+  .social-float-dock { right: max(14px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); max-width: calc(100vw - 28px); }
   .instagram-float { width: 43px; height: 43px; }
   .whatsapp-float { width: 58px; min-width: 58px; height: 58px; padding: 0; }
   .whatsapp-float-label { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
@@ -618,10 +627,10 @@ footer p { margin: 8px 0 0; }
 
 @media (max-width: 420px) {
   .hero-art {
+    --hero-scale: .66;
     width: 100%;
     min-height: 360px;
     margin: -28px auto -40px;
-    transform: scale(.66);
   }
   .hero-points { display: grid; }
   .future-section ul { grid-template-columns: 1fr; }
