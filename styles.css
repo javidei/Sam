@@ -549,7 +549,14 @@ footer p { margin: 8px 0 0; }
   .hero h1 { font-size: clamp(58px, 18vw, 82px); }
   .hero-lead { margin-top: 28px; font-size: 17px; }
   .hero-actions .button { width: 100%; }
-  .hero-art { min-height: 430px; transform: scale(.86); margin: -20px -35px -50px; }
+  .hero-art {
+    width: min(100%, 520px);
+    min-height: 430px;
+    margin: -20px auto -50px;
+    justify-self: center;
+    transform: scale(.82);
+    transform-origin: center;
+  }
 
   .service-intro, .catalog-section, .process-section, .contact-section { width: calc(100% - 32px); }
   .service-intro, .catalog-section { padding: 80px 0; }
@@ -610,7 +617,12 @@ footer p { margin: 8px 0 0; }
 }
 
 @media (max-width: 420px) {
-  .hero-art { transform: scale(.77); margin-right: -72px; margin-left: -72px; }
+  .hero-art {
+    width: 100%;
+    min-height: 360px;
+    margin: -28px auto -40px;
+    transform: scale(.66);
+  }
   .hero-points { display: grid; }
   .future-section ul { grid-template-columns: 1fr; }
 }
