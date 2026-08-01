@@ -22,6 +22,10 @@ const statusFilter = $('#status-filter');
 const kindFilter = $('#kind-filter');
 const storefrontForm = $('#storefront-form');
 const storefrontStatus = $('#storefront-status');
+const productImagesInput = $('#product-images');
+const imageList = $('#image-list');
+const imageCount = $('#image-count');
+const imageEmpty = $('#image-empty');
 
 let session = null;
 let project = null;
@@ -30,6 +34,13 @@ let categories = [];
 let products = [];
 let currentProduct = null;
 let storefrontSetting = null;
+let imageDrafts = [];
+let removedImages = [];
+
+const imageLimit = 8;
+const imageSizeLimit = 25 * 1024 * 1024;
+const storageImageSizeLimit = 10 * 1024 * 1024;
+const acceptedImageTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif']);
 
 function setStatus(element, message = '', isError = false) {
   element.textContent = message;
@@ -52,6 +63,51 @@ function moneyToCents(value) {
 function formatMoney(cents, currency = 'EUR') {
   if (!Number.isInteger(cents)) return 'Sin precio';
   return new Intl.NumberFormat('es-ES', { style: 'currency', currency }).format(cents / 100);
+}
+
+function encodeStoragePath(path) {
+  return String(path).split('/').map(encodeURIComponent).join('/');
+}
+
+function publicStorageUrl(file) {
+  if (!file?.bucket || !file?.path) return '';
+  return `${supabaseUrl}/storage/v1/object/public/${encodeURIComponent(file.bucket)}/${encodeStoragePath(file.path)}`;
+}
+
+function imageExtension(type) {
+  return ({
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+    'image/avif': 'avif'
+  })[type] || 'jpg';
+}
+
+async function optimizeImage(file) {
+  if (typeof createImageBitmap !== 'function') {
+    return { blob: file, extension: imageExtension(file.type) };
+  }
+
+  try {
+    const bitmap = await createImageBitmap(file);
+    const maxSide = 2000;
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const context = canvas.getContext('2d');
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+
+    const optimized = await new Promise((resolve) => canvas.toBlob(resolve, 'image/webp', 0.86));
+    if (optimized && (scale < 1 || optimized.size < file.size)) {
+      return { blob: optimized, extension: 'webp' };
+    }
+  } catch (error) {
+    console.warn('No se ha podido optimizar una imagen; se subirá el original.', error);
+  }
+
+  return { blob: file, extension: imageExtension(file.type) };
 }
 
 function storeSession(value) {
@@ -115,6 +171,103 @@ async function rest(resource, { method = 'GET', query = {}, body, prefer } = {})
   return payload;
 }
 
+async function storageRequest(path, { method = 'POST', body, contentType } = {}) {
+  const response = await fetch(
+    `${supabaseUrl}/storage/v1/object/sam-public/${encodeStoragePath(path)}`,
+    {
+      method,
+      headers: {
+        apikey: publishableKey,
+        Authorization: `Bearer ${session.access_token}`,
+        ...(contentType ? { 'Content-Type': contentType } : {}),
+        ...(method === 'POST' ? { 'x-upsert': 'false' } : {})
+      },
+      body
+    }
+  );
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload.message || payload.error || `No se pudo gestionar la foto (${response.status})`);
+  }
+  return payload;
+}
+
+async function uploadProductImage(draft, product, sortOrder) {
+  const prepared = await optimizeImage(draft.sourceFile);
+  if (prepared.blob.size > storageImageSizeLimit) {
+    throw new Error(`“${draft.sourceFile.name}” sigue ocupando más de 10 MB después de optimizarla.`);
+  }
+  const uniquePart = typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const storagePath = `sam/products/${product.id}/${uniquePart}.${prepared.extension}`;
+
+  await storageRequest(storagePath, {
+    body: prepared.blob,
+    contentType: prepared.blob.type || draft.sourceFile.type
+  });
+
+  let fileRow = null;
+  try {
+    const createdFiles = await rest('files', {
+      method: 'POST',
+      body: {
+        project_id: project.id,
+        bucket: 'sam-public',
+        path: storagePath,
+        original_name: draft.sourceFile.name,
+        mime_type: prepared.blob.type || draft.sourceFile.type,
+        size_bytes: prepared.blob.size,
+        visibility: 'public',
+        alt_text: `${product.name} · foto ${sortOrder + 1}`,
+        uploaded_by: session.user.id
+      },
+      prefer: 'return=representation'
+    });
+    fileRow = createdFiles[0];
+    await rest('product_images', {
+      method: 'POST',
+      body: {
+        product_id: product.id,
+        file_id: fileRow.id,
+        sort_order: sortOrder,
+        is_primary: Boolean(draft.isPrimary)
+      },
+      prefer: 'return=minimal'
+    });
+  } catch (error) {
+    if (fileRow) {
+      await rest('files', {
+        method: 'DELETE',
+        query: { id: `eq.${fileRow.id}` },
+        prefer: 'return=minimal'
+      }).catch(() => {});
+    }
+    await storageRequest(storagePath, { method: 'DELETE' }).catch(() => {});
+    throw error;
+  }
+
+  return {
+    key: `file-${fileRow.id}`,
+    type: 'existing',
+    fileId: fileRow.id,
+    file: fileRow,
+    isPrimary: Boolean(draft.isPrimary),
+    previewUrl: publicStorageUrl(fileRow)
+  };
+}
+
+async function deleteStoredImage(image) {
+  await rest('files', {
+    method: 'DELETE',
+    query: { id: `eq.${image.fileId}` },
+    prefer: 'return=minimal'
+  });
+  await storageRequest(image.file.path, { method: 'DELETE' }).catch((error) => {
+    console.warn('La referencia de la foto se eliminó, pero Storage no pudo limpiarla.', error);
+  });
+}
+
 async function loadAccess() {
   const projectRows = await rest('projects', {
     query: { select: 'id,name,slug', slug: 'eq.sam', limit: '1' }
@@ -148,7 +301,7 @@ async function loadCatalog() {
     }),
     rest('catalog_products', {
       query: {
-        select: 'id,category_id,slug,name,short_description,kind,fulfillment,status,featured,requires_quote,metadata,sort_order,published_at,category:catalog_categories(name),variants:product_variants(id,name,sku,price_cents,currency,track_inventory,stock_quantity,low_stock_threshold,is_active,sort_order)',
+        select: 'id,category_id,slug,name,short_description,kind,fulfillment,status,featured,requires_quote,metadata,sort_order,published_at,category:catalog_categories(name),variants:product_variants(id,name,sku,price_cents,currency,track_inventory,stock_quantity,low_stock_threshold,is_active,sort_order),images:product_images(file_id,sort_order,is_primary,file:files(id,bucket,path,original_name,mime_type,size_bytes,alt_text))',
         project_id: `eq.${project.id}`,
         order: 'sort_order.asc,name.asc'
       }
@@ -254,7 +407,12 @@ function renderProducts() {
     name.className = 'product-name';
     name.append(
       textElement('strong', '', product.name),
-      textElement('small', '', [variant?.sku || product.slug, formatProductPrice(product), stock.text].join(' · '))
+      textElement('small', '', [
+        variant?.sku || product.slug,
+        formatProductPrice(product),
+        stock.text,
+        `${product.images?.length || 0} foto${product.images?.length === 1 ? '' : 's'}`
+      ].join(' · '))
     );
     const edit = textElement('button', 'row-button', 'Editar');
     edit.type = 'button';
@@ -341,7 +499,172 @@ async function saveStorefront(event) {
   }
 }
 
+function clearImageDrafts() {
+  imageDrafts.forEach((image) => {
+    if (image.type === 'pending' && image.previewUrl) URL.revokeObjectURL(image.previewUrl);
+  });
+  imageDrafts = [];
+  removedImages = [];
+}
+
+function normalizeImageDrafts() {
+  if (!imageDrafts.length) return;
+  if (!imageDrafts.some((image) => image.isPrimary)) imageDrafts[0].isPrimary = true;
+  let primaryFound = false;
+  imageDrafts.forEach((image) => {
+    image.isPrimary = image.isPrimary && !primaryFound;
+    if (image.isPrimary) primaryFound = true;
+  });
+}
+
+function setPrimaryImage(key) {
+  const index = imageDrafts.findIndex((image) => image.key === key);
+  if (index > 0) {
+    const [selected] = imageDrafts.splice(index, 1);
+    imageDrafts.unshift(selected);
+  }
+  imageDrafts.forEach((image) => { image.isPrimary = image.key === key; });
+  renderImageDrafts();
+}
+
+function moveImage(key, direction) {
+  const index = imageDrafts.findIndex((image) => image.key === key);
+  const target = index + direction;
+  if (index < 0 || target < 0 || target >= imageDrafts.length) return;
+  const [image] = imageDrafts.splice(index, 1);
+  imageDrafts.splice(target, 0, image);
+  renderImageDrafts();
+}
+
+function removeImageDraft(key) {
+  const index = imageDrafts.findIndex((image) => image.key === key);
+  if (index < 0) return;
+  const [image] = imageDrafts.splice(index, 1);
+  if (image.type === 'existing') removedImages.push(image);
+  else if (image.previewUrl) URL.revokeObjectURL(image.previewUrl);
+  normalizeImageDrafts();
+  renderImageDrafts();
+}
+
+function imageAction(label, className, handler, disabled = false, ariaLabel = label) {
+  const button = textElement('button', className, label);
+  button.type = 'button';
+  button.disabled = disabled;
+  button.setAttribute('aria-label', ariaLabel);
+  button.addEventListener('click', handler);
+  return button;
+}
+
+function renderImageDrafts() {
+  normalizeImageDrafts();
+  imageList.replaceChildren();
+  imageCount.textContent = `${imageDrafts.length} / ${imageLimit} fotos`;
+  imageEmpty.hidden = imageDrafts.length !== 0;
+  productImagesInput.disabled = imageDrafts.length >= imageLimit;
+  productImagesInput.closest('.image-picker').classList.toggle('is-disabled', productImagesInput.disabled);
+
+  imageDrafts.forEach((image, index) => {
+    const item = document.createElement('article');
+    item.className = 'image-item';
+
+    const preview = document.createElement('img');
+    preview.src = image.previewUrl;
+    preview.alt = `Previsualización ${index + 1}`;
+
+    const details = document.createElement('div');
+    details.className = 'image-item-details';
+    details.append(
+      textElement('strong', '', image.type === 'pending' ? image.sourceFile.name : (image.file.original_name || `Foto ${index + 1}`)),
+      textElement('small', image.type === 'pending' ? 'image-pending' : '', image.type === 'pending' ? 'Nueva · se subirá al guardar' : `Foto ${index + 1}`)
+    );
+    if (image.isPrimary) details.append(textElement('span', 'primary-badge', 'Portada'));
+
+    const actions = document.createElement('div');
+    actions.className = 'image-item-actions';
+    actions.append(
+      imageAction('Portada', 'image-action', () => setPrimaryImage(image.key), image.isPrimary, `Usar ${index + 1} como portada`),
+      imageAction('←', 'image-action image-action--icon', () => moveImage(image.key, -1), index === 0, `Mover foto ${index + 1} a la izquierda`),
+      imageAction('→', 'image-action image-action--icon', () => moveImage(image.key, 1), index === imageDrafts.length - 1, `Mover foto ${index + 1} a la derecha`),
+      imageAction('Eliminar', 'image-action image-action--delete', () => removeImageDraft(image.key), false, `Eliminar foto ${index + 1}`)
+    );
+
+    item.append(preview, details, actions);
+    imageList.append(item);
+  });
+}
+
+function loadProductImageDrafts(product) {
+  imageDrafts = [...(product?.images || [])]
+    .filter((image) => image.file)
+    .sort((a, b) => {
+      if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
+      return a.sort_order - b.sort_order;
+    })
+    .map((image) => ({
+      key: `file-${image.file_id}`,
+      type: 'existing',
+      fileId: image.file_id,
+      file: image.file,
+      isPrimary: image.is_primary,
+      previewUrl: publicStorageUrl(image.file)
+    }));
+  removedImages = [];
+  renderImageDrafts();
+}
+
+function selectProductImages(event) {
+  const selected = [...event.target.files];
+  event.target.value = '';
+  if (!selected.length) return;
+
+  const availableSlots = imageLimit - imageDrafts.length;
+  const valid = selected.filter((file) => acceptedImageTypes.has(file.type) && file.size <= imageSizeLimit);
+  const accepted = valid.slice(0, availableSlots);
+  const rejectedCount = selected.length - accepted.length;
+
+  accepted.forEach((file) => {
+    imageDrafts.push({
+      key: `pending-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      type: 'pending',
+      sourceFile: file,
+      isPrimary: imageDrafts.length === 0,
+      previewUrl: URL.createObjectURL(file)
+    });
+  });
+  normalizeImageDrafts();
+  renderImageDrafts();
+
+  if (rejectedCount) {
+    setStatus(productFormStatus, `Se han añadido ${accepted.length} fotos. ${rejectedCount} no entraron por formato, tamaño o por superar el límite de ${imageLimit}.`, true);
+  } else {
+    setStatus(productFormStatus, `${accepted.length} foto${accepted.length === 1 ? '' : 's'} preparada${accepted.length === 1 ? '' : 's'}. Se subirán al guardar.`);
+  }
+}
+
+async function syncProductImages(product) {
+  for (const image of removedImages) await deleteStoredImage(image);
+  removedImages = [];
+
+  for (let index = 0; index < imageDrafts.length; index += 1) {
+    const image = imageDrafts[index];
+    setStatus(productFormStatus, `Guardando fotos… ${index + 1} de ${imageDrafts.length}`);
+    if (image.type === 'pending') {
+      const uploaded = await uploadProductImage(image, product, index);
+      URL.revokeObjectURL(image.previewUrl);
+      imageDrafts[index] = uploaded;
+    } else {
+      await rest('product_images', {
+        method: 'PATCH',
+        query: { product_id: `eq.${product.id}`, file_id: `eq.${image.fileId}` },
+        body: { sort_order: index, is_primary: Boolean(image.isPrimary) },
+        prefer: 'return=minimal'
+      });
+    }
+  }
+}
+
 function resetProductForm() {
+  clearImageDrafts();
   productForm.reset();
   $('#product-id').value = '';
   $('#variant-id').value = '';
@@ -358,6 +681,7 @@ function resetProductForm() {
   setStatus(productFormStatus);
   syncProductKind();
   syncPriceFields();
+  renderImageDrafts();
 }
 
 function syncProductKind() {
@@ -413,6 +737,7 @@ function openProduct(product = null) {
     $('#stock-quantity').value = variant?.stock_quantity ?? 0;
     $('#stock-low-threshold').value = variant?.low_stock_threshold ?? 2;
     $('#delete-product-button').hidden = false;
+    loadProductImageDrafts(product);
   }
 
   syncProductKind();
@@ -423,6 +748,8 @@ function openProduct(product = null) {
 async function saveProduct(event) {
   event.preventDefault();
   setStatus(productFormStatus, 'Guardando…');
+  const submitButton = productForm.querySelector('.primary-button[type="submit"]');
+  submitButton.disabled = true;
   const productId = $('#product-id').value;
   const variantId = $('#variant-id').value;
   const status = $('#product-status').value;
@@ -435,6 +762,7 @@ async function saveProduct(event) {
 
   if (priceMode !== 'quote' && !Number.isInteger(priceCents)) {
     setStatus(productFormStatus, 'Indica un precio válido o selecciona “A consultar”.', true);
+    submitButton.disabled = false;
     return;
   }
 
@@ -455,6 +783,7 @@ async function saveProduct(event) {
     published_at: status === 'published' ? (currentProduct?.published_at || new Date().toISOString()) : null
   };
 
+  let savedProductId = null;
   try {
     const saved = productId
       ? await rest('catalog_products', {
@@ -469,6 +798,7 @@ async function saveProduct(event) {
         prefer: 'return=representation'
       });
     const savedProduct = saved[0];
+    savedProductId = savedProduct.id;
     const variantPayload = {
       project_id: project.id,
       product_id: savedProduct.id,
@@ -521,23 +851,45 @@ async function saveProduct(event) {
       }
     }
 
+    await syncProductImages(savedProduct);
     await loadCatalog();
     productDialog.close();
-    setStatus(dashboardStatus, `“${payload.name}” se ha guardado correctamente.`);
+    const photoCopy = imageDrafts.length === 1 ? ' con 1 foto' : (imageDrafts.length ? ` con ${imageDrafts.length} fotos` : '');
+    setStatus(dashboardStatus, `“${payload.name}” se ha guardado correctamente${photoCopy}.`);
   } catch (error) {
-    setStatus(productFormStatus, error.message, true);
+    if (savedProductId) {
+      try {
+        await loadCatalog();
+        const refreshed = products.find((product) => product.id === savedProductId);
+        if (refreshed) {
+          productDialog.close();
+          openProduct(refreshed);
+        }
+      } catch (reloadError) {
+        console.warn('No se pudo recargar el producto tras el error.', reloadError);
+      }
+      setStatus(productFormStatus, `El producto está guardado, pero no se pudieron completar todas las fotos: ${error.message}`, true);
+    } else {
+      setStatus(productFormStatus, error.message, true);
+    }
+  } finally {
+    submitButton.disabled = false;
   }
 }
 
 async function deleteProduct() {
   if (!currentProduct || !confirm(`¿Eliminar “${currentProduct.name}”? Esta acción no se puede deshacer.`)) return;
   setStatus(productFormStatus, 'Eliminando…');
+  const storedImages = [...(currentProduct.images || [])]
+    .filter((image) => image.file)
+    .map((image) => ({ fileId: image.file_id, file: image.file }));
   try {
     await rest('catalog_products', {
       method: 'DELETE',
       query: { id: `eq.${currentProduct.id}` },
       prefer: 'return=minimal'
     });
+    await Promise.allSettled(storedImages.map((image) => deleteStoredImage(image)));
     await loadCatalog();
     productDialog.close();
     setStatus(dashboardStatus, 'Producto eliminado correctamente.');
@@ -603,6 +955,7 @@ $('#product-name').addEventListener('input', () => {
 $('#product-kind').addEventListener('change', syncProductKind);
 $('#track-inventory').addEventListener('change', syncProductKind);
 $('#price-mode').addEventListener('change', syncPriceFields);
+productImagesInput.addEventListener('change', selectProductImages);
 
 (async function init() {
   if (!supabaseUrl || !publishableKey) {

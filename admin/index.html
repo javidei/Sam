@@ -7,7 +7,7 @@
   <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#262329">
   <link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="admin.css?v=sam-admin-2">
+  <link rel="stylesheet" href="admin.css?v=sam-admin-3">
 </head>
 <body>
   <header class="topbar">
@@ -99,6 +99,22 @@
         <label>Slug<input id="product-slug" type="text" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*"></label>
         <label>Categoría<select id="product-category" required></select></label>
         <label class="field-wide">Descripción corta<textarea id="product-description" rows="3" maxlength="280"></textarea></label>
+        <section class="image-manager field-wide" aria-labelledby="image-manager-title">
+          <div class="image-manager-heading">
+            <div>
+              <h3 id="image-manager-title">Fotos del artículo</h3>
+              <p>Elige la portada y ordena el resto antes de guardar los cambios.</p>
+            </div>
+            <strong id="image-count">0 / 8 fotos</strong>
+          </div>
+          <label class="image-picker" for="product-images">
+            <input id="product-images" type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple>
+            <span>+ Seleccionar una o varias fotos</span>
+            <small>JPEG, PNG, WEBP o AVIF · máximo 8 fotos · hasta 25 MB por original</small>
+          </label>
+          <div id="image-list" class="image-list" aria-live="polite"></div>
+          <p id="image-empty" class="image-empty">Todavía no hay fotos. El catálogo mostrará la ilustración de reserva.</p>
+        </section>
         <label>Tipo<select id="product-kind"><option value="physical">Artículo físico</option><option value="service">Servicio</option><option value="digital">Servicio digital</option></select></label>
         <label>Entrega<select id="product-fulfillment"><option value="pickup">Recogida</option><option value="digital_delivery">Entrega digital</option><option value="both">Ambas</option></select></label>
         <label>Estado<select id="product-status"><option value="published">Publicado</option><option value="draft">Borrador</option><option value="hidden">Oculto</option><option value="archived">Archivado</option></select></label>
@@ -121,7 +137,7 @@
       <p id="product-form-status" class="form-status" role="status"></p>
     </form>
   </dialog>
-  <script src="../sam-settings.js?v=sam-admin-2"></script>
-  <script src="admin.js?v=sam-admin-2"></script>
+  <script src="../sam-settings.js?v=sam-admin-3"></script>
+  <script src="admin.js?v=sam-admin-3"></script>
 </body>
 </html>

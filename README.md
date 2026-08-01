@@ -43,6 +43,12 @@ cada entrada se puede elegir precio fijo, precio «desde» o precio a consultar.
 artículos físicos pueden controlar las unidades disponibles y el umbral de stock bajo;
 los servicios pueden mostrar una tarifa estándar y mantener la consulta personalizada.
 
+Cada producto admite hasta ocho fotos desde el mismo formulario. El panel optimiza las
+imágenes, las sube al bucket público `sam-public`, permite elegir la portada, cambiar el
+orden y eliminarlas. El catálogo presenta la galería con navegación, gesto táctil y visor
+ampliado. Los metadatos se guardan en `files` y `product_images`; los binarios no se
+guardan en GitHub.
+
 Desde el mismo panel se configura el nombre de contacto, WhatsApp y correo del
 propietario. La tienda pública utiliza esos datos para preparar una consulta directa. La
 sesión se renueva de forma automática y todas las operaciones quedan protegidas

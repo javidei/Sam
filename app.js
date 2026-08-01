@@ -178,12 +178,11 @@ function publicStorageUrl(file, supabaseUrl) {
   return `${supabaseUrl}/storage/v1/object/public/${encodeURIComponent(file.bucket)}/${encodedPath}`;
 }
 
-function getPrimaryImage(product) {
-  const images = [...(product.images || [])].sort((a, b) => {
+function getProductImages(product) {
+  return [...(product.images || [])].filter((image) => image.file).sort((a, b) => {
     if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
     return a.sort_order - b.sort_order;
   });
-  return images[0]?.file || null;
 }
 
 function appendFallbackArt(art, style) {
@@ -225,6 +224,166 @@ function createPriceBlock(price) {
   return priceBlock;
 }
 
+let imageViewer = null;
+let imageViewerState = null;
+
+function renderImageViewer() {
+  if (!imageViewer || !imageViewerState) return;
+  const { files, productName, supabaseUrl } = imageViewerState;
+  const index = imageViewerState.index;
+  const file = files[index].file;
+  const image = imageViewer.querySelector('img');
+  image.src = publicStorageUrl(file, supabaseUrl);
+  image.alt = file.alt_text || `${productName} · foto ${index + 1}`;
+  imageViewer.querySelector('.image-viewer-title').textContent = productName;
+  imageViewer.querySelector('.image-viewer-count').textContent = `${index + 1} / ${files.length}`;
+  imageViewer.querySelectorAll('[data-viewer-direction]').forEach((button) => {
+    button.hidden = files.length < 2;
+  });
+}
+
+function changeViewerImage(direction) {
+  if (!imageViewerState) return;
+  const length = imageViewerState.files.length;
+  imageViewerState.index = (imageViewerState.index + direction + length) % length;
+  renderImageViewer();
+}
+
+function ensureImageViewer() {
+  if (imageViewer) return imageViewer;
+  imageViewer = document.createElement('dialog');
+  imageViewer.className = 'image-viewer';
+  imageViewer.setAttribute('aria-label', 'Galería ampliada del producto');
+
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.className = 'image-viewer-close';
+  close.setAttribute('aria-label', 'Cerrar galería');
+  close.textContent = '×';
+
+  const previous = document.createElement('button');
+  previous.type = 'button';
+  previous.className = 'image-viewer-arrow image-viewer-arrow--previous';
+  previous.dataset.viewerDirection = '-1';
+  previous.setAttribute('aria-label', 'Foto anterior');
+  previous.textContent = '‹';
+
+  const next = document.createElement('button');
+  next.type = 'button';
+  next.className = 'image-viewer-arrow image-viewer-arrow--next';
+  next.dataset.viewerDirection = '1';
+  next.setAttribute('aria-label', 'Foto siguiente');
+  next.textContent = '›';
+
+  const figure = document.createElement('figure');
+  const image = document.createElement('img');
+  const caption = document.createElement('figcaption');
+  const title = document.createElement('strong');
+  title.className = 'image-viewer-title';
+  const count = document.createElement('span');
+  count.className = 'image-viewer-count';
+  caption.append(title, count);
+  figure.append(image, caption);
+  imageViewer.append(close, previous, figure, next);
+  document.body.append(imageViewer);
+
+  close.addEventListener('click', () => imageViewer.close());
+  previous.addEventListener('click', () => changeViewerImage(-1));
+  next.addEventListener('click', () => changeViewerImage(1));
+  imageViewer.addEventListener('click', (event) => {
+    if (event.target === imageViewer) imageViewer.close();
+  });
+  imageViewer.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowLeft') changeViewerImage(-1);
+    if (event.key === 'ArrowRight') changeViewerImage(1);
+  });
+
+  let touchStart = 0;
+  figure.addEventListener('touchstart', (event) => { touchStart = event.changedTouches[0].clientX; }, { passive: true });
+  figure.addEventListener('touchend', (event) => {
+    const distance = event.changedTouches[0].clientX - touchStart;
+    if (Math.abs(distance) > 45) changeViewerImage(distance > 0 ? -1 : 1);
+  }, { passive: true });
+  return imageViewer;
+}
+
+function openImageViewer(productName, files, index, supabaseUrl) {
+  const viewer = ensureImageViewer();
+  imageViewerState = { productName, files, index, supabaseUrl };
+  renderImageViewer();
+  viewer.showModal();
+  viewer.querySelector('.image-viewer-close').focus();
+}
+
+function createProductGallery(product, supabaseUrl) {
+  const art = document.createElement('div');
+  art.className = 'catalog-art';
+  const images = getProductImages(product);
+  if (!images.length) {
+    art.setAttribute('aria-hidden', 'true');
+    appendFallbackArt(art, product.metadata?.art_style);
+    return art;
+  }
+
+  art.classList.add('catalog-art--image', 'catalog-gallery');
+  art.setAttribute('aria-label', `${images.length} foto${images.length === 1 ? '' : 's'} de ${product.name}`);
+  let activeIndex = 0;
+  const imageElements = images.map((imageData, index) => {
+    const image = document.createElement('img');
+    image.src = publicStorageUrl(imageData.file, supabaseUrl);
+    image.alt = imageData.file.alt_text || `${product.name} · foto ${index + 1}`;
+    image.loading = 'lazy';
+    image.decoding = 'async';
+    image.addEventListener('click', () => openImageViewer(product.name, images, activeIndex, supabaseUrl));
+    art.append(image);
+    return image;
+  });
+
+  const counter = document.createElement('span');
+  counter.className = 'catalog-gallery-count';
+  const showImage = (index) => {
+    activeIndex = (index + images.length) % images.length;
+    imageElements.forEach((image, imageIndex) => {
+      image.hidden = imageIndex !== activeIndex;
+    });
+    counter.textContent = `${activeIndex + 1} / ${images.length}`;
+  };
+
+  if (images.length > 1) {
+    const previous = document.createElement('button');
+    previous.type = 'button';
+    previous.className = 'catalog-gallery-arrow catalog-gallery-arrow--previous';
+    previous.setAttribute('aria-label', `Foto anterior de ${product.name}`);
+    previous.textContent = '‹';
+    previous.addEventListener('click', () => showImage(activeIndex - 1));
+
+    const next = document.createElement('button');
+    next.type = 'button';
+    next.className = 'catalog-gallery-arrow catalog-gallery-arrow--next';
+    next.setAttribute('aria-label', `Foto siguiente de ${product.name}`);
+    next.textContent = '›';
+    next.addEventListener('click', () => showImage(activeIndex + 1));
+    art.append(previous, next, counter);
+
+    let touchStart = 0;
+    art.addEventListener('touchstart', (event) => { touchStart = event.changedTouches[0].clientX; }, { passive: true });
+    art.addEventListener('touchend', (event) => {
+      const distance = event.changedTouches[0].clientX - touchStart;
+      if (Math.abs(distance) > 45) showImage(activeIndex + (distance > 0 ? -1 : 1));
+    }, { passive: true });
+  } else {
+    const expand = document.createElement('button');
+    expand.type = 'button';
+    expand.className = 'catalog-gallery-expand';
+    expand.textContent = 'Ampliar foto';
+    expand.addEventListener('click', () => openImageViewer(product.name, images, 0, supabaseUrl));
+    art.append(expand);
+  }
+
+  showImage(0);
+  return art;
+}
+
 function createCatalogCard(product, supabaseUrl) {
   const category = getCategory(product);
   const categories = getCategories(product);
@@ -241,21 +400,7 @@ function createCatalogCard(product, supabaseUrl) {
     ...(product.metadata?.search_terms || [])
   ].filter(Boolean).join(' ');
 
-  const art = document.createElement('div');
-  art.className = 'catalog-art';
-  art.setAttribute('aria-hidden', 'true');
-  const primaryImage = getPrimaryImage(product);
-  const imageUrl = publicStorageUrl(primaryImage, supabaseUrl);
-  if (imageUrl) {
-    art.classList.add('catalog-art--image');
-    const image = document.createElement('img');
-    image.src = imageUrl;
-    image.alt = primaryImage.alt_text || '';
-    image.loading = 'lazy';
-    art.append(image);
-  } else {
-    appendFallbackArt(art, product.metadata?.art_style);
-  }
+  const art = createProductGallery(product, supabaseUrl);
 
   const copy = document.createElement('div');
   copy.className = 'catalog-copy';

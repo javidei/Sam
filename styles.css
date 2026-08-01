@@ -313,6 +313,15 @@ button { cursor: pointer; }
 .catalog-art { position: relative; height: 260px; overflow: hidden; background: #f1f1f1; }
 .catalog-art--image::before { display: none; }
 .catalog-art--image img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.catalog-gallery img { cursor: zoom-in; }
+.catalog-gallery img[hidden] { display: none; }
+.catalog-gallery-arrow, .catalog-gallery-expand { position: absolute; z-index: 3; color: var(--ink); background: rgba(255,255,255,.92); border: 1px solid rgba(38,35,41,.12); box-shadow: 0 5px 18px rgba(38,35,41,.16); }
+.catalog-gallery-arrow { width: 38px; height: 38px; top: 50%; display: grid; place-items: center; border-radius: 50%; font-size: 29px; line-height: 1; transform: translateY(-50%); }
+.catalog-gallery-arrow--previous { left: 12px; }
+.catalog-gallery-arrow--next { right: 12px; }
+.catalog-gallery-arrow:hover, .catalog-gallery-arrow:focus-visible, .catalog-gallery-expand:hover, .catalog-gallery-expand:focus-visible { color: var(--white); background: var(--pink); }
+.catalog-gallery-count { position: absolute; z-index: 3; right: 12px; bottom: 12px; padding: 5px 9px; color: var(--white); background: rgba(38,35,41,.78); border-radius: 999px; font-size: 11px; font-weight: 900; }
+.catalog-gallery-expand { right: 12px; bottom: 12px; min-height: 32px; padding: 0 11px; border-radius: 999px; font-size: 10px; font-weight: 900; }
 .catalog-copy { height: 100%; padding: 25px; display: flex; flex-direction: column; }
 .catalog-copy > div:first-child { display: flex; justify-content: space-between; gap: 12px; color: var(--pink); font-size: 11px; font-weight: 950; letter-spacing: .07em; text-transform: uppercase; }
 .catalog-copy > div:first-child b { color: var(--muted); }
@@ -334,6 +343,20 @@ button { cursor: pointer; }
 .catalog-copy > div:first-child .catalog-stock--digital { color: #176b75; }
 .catalog-copy a { flex: 0 0 auto; color: var(--pink); font-size: 13px; font-weight: 900; text-align: right; }
 .catalog-copy a:hover { color: var(--pink); }
+
+.image-viewer { width: min(1080px, calc(100% - 28px)); height: min(820px, calc(100% - 28px)); padding: 18px; overflow: hidden; color: var(--white); background: #171419; border: 0; border-radius: 24px; box-shadow: 0 35px 100px rgba(0,0,0,.45); }
+.image-viewer::backdrop { background: rgba(20,16,21,.84); backdrop-filter: blur(7px); }
+.image-viewer figure { width: 100%; height: 100%; margin: 0; display: grid; grid-template-rows:minmax(0,1fr) auto; }
+.image-viewer figure img { width: 100%; height: 100%; min-height: 0; display: block; object-fit: contain; }
+.image-viewer figcaption { min-height: 48px; padding: 12px 54px 0; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.image-viewer-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.image-viewer-count { flex: 0 0 auto; color: rgba(255,255,255,.72); font-size: 12px; font-weight: 900; }
+.image-viewer-close, .image-viewer-arrow { position: absolute; z-index: 4; display: grid; place-items: center; color: var(--white); background: rgba(23,20,25,.76); border: 1px solid rgba(255,255,255,.24); border-radius: 50%; }
+.image-viewer-close { width: 42px; height: 42px; top: 18px; right: 18px; font-size: 29px; }
+.image-viewer-arrow { width: 48px; height: 48px; top: 50%; font-size: 38px; transform: translateY(-50%); }
+.image-viewer-arrow--previous { left: 24px; }
+.image-viewer-arrow--next { right: 24px; }
+.image-viewer-close:hover, .image-viewer-arrow:hover { background: var(--pink); }
 
 .catalog-art::before { content: ""; position: absolute; width: 230px; height: 230px; top: 50%; left: 50%; border: 1px dashed rgba(38,35,41,.22); border-radius: 50%; transform: translate(-50%,-50%); }
 .catalog-art--paper { background: #dff7fa; }
@@ -474,6 +497,12 @@ footer p { margin: 8px 0 0; }
   .catalog-art { height: 235px; }
   .catalog-copy p { min-height: 0; }
   .catalog-legend { gap: 9px 16px; }
+  .image-viewer { width: calc(100% - 16px); height: calc(100% - 20px); padding: 8px; border-radius: 18px; }
+  .image-viewer figcaption { padding: 10px 48px 4px 8px; }
+  .image-viewer-close { top: 12px; right: 12px; }
+  .image-viewer-arrow { width: 42px; height: 42px; top: auto; bottom: 13px; }
+  .image-viewer-arrow--previous { left: auto; right: 65px; }
+  .image-viewer-arrow--next { right: 14px; }
 
   .process-section { padding: 80px 0; grid-template-columns: 1fr; gap: 40px; }
   .process-copy { position: static; }
