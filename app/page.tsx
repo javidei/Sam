@@ -202,7 +202,7 @@ export default function Home() {
 
         <section className="contact-section" id="contacto" aria-labelledby="contact-title">
           <div className="contact-intro"><p className="section-kicker">Hablemos de tu idea</p><h2 id="contact-title">¿Qué hacemos hoy?</h2><p>Cuéntanos qué necesitas. Te responderemos con las opciones más adecuadas para tu encargo.</p></div>
-          <div className="contact-actions"><a className="contact-card contact-card--primary" href={contactUrl} target="_blank" rel="noreferrer"><span>Consulta directa</span><strong>Escribir por WhatsApp</strong><b>→</b></a><a className="contact-card contact-card--secondary" href="mailto:hola@sam.local"><span>Correo</span><strong>hola@sam.local</strong><b>→</b></a><div className="contact-card contact-card--location"><span>Servicio local</span><strong>Palma del Río<br/>Córdoba</strong><b>⌖</b></div></div>
+          <div className="contact-actions"><a className="contact-card contact-card--primary" href={contactUrl} target="_blank" rel="noreferrer"><span>Consulta directa</span><strong>Abrir WhatsApp</strong><b>→</b></a><div className="contact-card contact-card--secondary"><span>Próximamente</span><strong>Correo por configurar</strong><b>·</b></div><div className="contact-card contact-card--location"><span>Servicio local</span><strong>Palma del Río<br/>Córdoba</strong><b>⌖</b></div></div>
         </section>
       </main>
 
