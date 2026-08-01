@@ -7,11 +7,11 @@
   <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#262329">
   <link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="admin.css?v=sam-admin-6">
+  <link rel="stylesheet" href="admin.css?v=sam-admin-8">
 </head>
 <body>
   <header class="topbar">
-    <a href="../" aria-label="Volver a SAM"><img src="../assets/logo.svg" alt="SAM" width="150" height="72"></a>
+    <a href="../" aria-label="Volver a SAM"><img src="../assets/logo.svg" alt="SAM" width="150" height="72" data-brand-logo></a>
     <div class="topbar-actions">
       <span id="session-user" hidden></span>
       <button id="logout-button" class="text-button" type="button" hidden>Cerrar sesión</button>
@@ -51,11 +51,36 @@
         <form id="storefront-form">
           <div class="panel-heading">
             <div>
-              <p class="eyebrow">Contacto público</p>
-              <h2>Contacto, pagos y Wallapop</h2>
-              <p class="muted">Configura los canales que verá el cliente. SAM los utilizará en las consultas, el aviso de entrada y la sección de compra y pago.</p>
+              <p class="eyebrow">Configuración pública</p>
+              <h2>Logo, contacto, pagos y Wallapop</h2>
+              <p class="muted">Gestiona la imagen y los canales que verá el cliente. Los cambios se aplicarán en la tienda al volver a cargarla.</p>
             </div>
             <button class="secondary-button" type="submit">Guardar configuración</button>
+          </div>
+          <div class="brand-logo-editor">
+            <div class="brand-logo-preview">
+              <img id="brand-logo-preview" src="../assets/logo.svg" alt="Vista previa del logo de SAM">
+            </div>
+            <div class="brand-logo-controls">
+              <div>
+                <p class="eyebrow">Identidad visual</p>
+                <h3>Logo de la tienda</h3>
+                <p>Sube un PNG, JPEG, WEBP o AVIF. La imagen se optimizará antes de guardarse en Supabase.</p>
+              </div>
+              <div class="brand-logo-actions">
+                <label class="brand-logo-picker" for="brand-logo-input">
+                  <input id="brand-logo-input" type="file" accept="image/jpeg,image/png,image/webp,image/avif">
+                  <span>Elegir otro logo</span>
+                </label>
+                <button id="brand-logo-reset" class="text-button brand-logo-reset" type="button" hidden>Restaurar logo original</button>
+              </div>
+            </div>
+          </div>
+          <p class="field-help">El logo personalizado se almacena en Supabase. El archivo original del proyecto se mantiene como opción de restauración.</p>
+          <div class="storefront-subheading">
+            <p class="eyebrow">Contacto público</p>
+            <h3>Datos de contacto</h3>
+            <p>Estos datos se utilizan para preparar las consultas del catálogo.</p>
           </div>
           <div class="storefront-grid">
             <label>Nombre visible<input id="contact-name" type="text" maxlength="80" placeholder="Por ejemplo: Javier"></label>
@@ -147,7 +172,7 @@
       <p id="product-form-status" class="form-status" role="status"></p>
     </form>
   </dialog>
-  <script src="../sam-settings.js?v=sam-admin-7"></script>
-  <script src="admin.js?v=sam-admin-7"></script>
+  <script src="../sam-settings.js?v=sam-admin-8"></script>
+  <script src="admin.js?v=sam-admin-8"></script>
 </body>
 </html>

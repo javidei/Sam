@@ -484,6 +484,7 @@ button { cursor: pointer; }
 
 footer { padding: 52px max(20px, calc((100% - var(--max)) / 2)); display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 40px; color: rgba(255,255,255,.7); background: var(--ink); font-size: 13px; }
 .footer-brand { width: 85px; display: block; filter: brightness(0) invert(1); }
+.footer-brand.has-custom-logo { filter: none; }
 footer p { margin: 8px 0 0; }
 .footer-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 22px; }
 .footer-links a:hover { color: var(--yellow); }

@@ -35,6 +35,7 @@ const defaultStorefrontSettings = Object.freeze({
   wallapop_available: true,
   commerce_notice_enabled: true
 });
+const publicSupabaseUrl = String(window.SAM_CONFIG?.supabaseUrl || '').replace(/\/$/, '');
 let catalogCards = [...document.querySelectorAll('.catalog-card')];
 let activeFilter = 'all';
 let storefrontSettings = { ...defaultStorefrontSettings };
@@ -198,6 +199,29 @@ function publicStorageUrl(file, supabaseUrl) {
   if (!file?.bucket || !file?.path) return '';
   const encodedPath = file.path.split('/').map(encodeURIComponent).join('/');
   return `${supabaseUrl}/storage/v1/object/public/${encodeURIComponent(file.bucket)}/${encodedPath}`;
+}
+
+function updateBrandingUI() {
+  const logo = storefrontSettings.brand_logo;
+  const hasCustomLogo = Boolean(logo?.bucket && logo?.path && publicSupabaseUrl);
+  const logoUrl = hasCustomLogo ? publicStorageUrl(logo, publicSupabaseUrl) : 'assets/logo.svg';
+
+  document.querySelectorAll('[data-brand-logo]').forEach((image) => {
+    const footerBrand = image.closest('.footer-brand');
+    footerBrand?.classList.toggle('has-custom-logo', hasCustomLogo);
+    image.onerror = () => {
+      image.onerror = null;
+      image.src = 'assets/logo.svg';
+      footerBrand?.classList.remove('has-custom-logo');
+    };
+    image.src = logoUrl;
+  });
+
+  const favicon = document.querySelector('[data-brand-favicon]');
+  if (favicon) {
+    favicon.href = logoUrl;
+    favicon.type = hasCustomLogo && logo.mime_type ? logo.mime_type : 'image/svg+xml';
+  }
 }
 
 function getProductImages(product) {
@@ -692,6 +716,7 @@ async function loadCatalogFromDatabase() {
       ...defaultStorefrontSettings,
       ...(settingRows[0]?.value || {})
     };
+    updateBrandingUI();
     updateContactUI();
     updateCommerceUI();
     if (!products.length) return;
@@ -709,6 +734,7 @@ async function loadCatalogFromDatabase() {
 enhanceFallbackCatalog();
 bindServiceLinks();
 updateCatalog();
+updateBrandingUI();
 updateCommerceUI();
 loadCatalogFromDatabase();
 

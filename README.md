@@ -62,6 +62,18 @@ pública utiliza esos datos para preparar consultas y mostrar los canales de com
 tener que editar el código. La sesión se renueva de forma automática y todas las
 operaciones quedan protegidas mediante RLS.
 
+El logo también se mantiene desde Administración. La imagen se optimiza, se almacena en
+el bucket `sam-public` y su referencia se guarda como `brand_logo` dentro de
+`project_settings.storefront`. La cabecera, el pie, el icono y el panel utilizan esa
+referencia al recargar. El administrador puede sustituirlo o restaurar el SVG original
+sin ejecutar una migración SQL.
+
+Las cuentas del panel utilizan correo electrónico y contraseña de Supabase Auth. Crear
+un usuario en Authentication genera su perfil, pero no le concede acceso a SAM: también
+debe existir en `project_members` con rol `admin` o `editor`. El rol `admin` puede cambiar
+la configuración pública y el catálogo; `editor` solo puede gestionar catálogo, precios,
+stock y fotografías.
+
 El aviso de Bizum y Wallapop se adapta a escritorio y móvil y se muestra en cada nueva
 entrada a la página. La información permanece visible en la sección «Pago y venta» de
 la tienda. El propio botón muestra y copia exactamente el número guardado en Supabase,

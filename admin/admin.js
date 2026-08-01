@@ -22,6 +22,9 @@ const statusFilter = $('#status-filter');
 const kindFilter = $('#kind-filter');
 const storefrontForm = $('#storefront-form');
 const storefrontStatus = $('#storefront-status');
+const brandLogoInput = $('#brand-logo-input');
+const brandLogoPreview = $('#brand-logo-preview');
+const brandLogoReset = $('#brand-logo-reset');
 const productImagesInput = $('#product-images');
 const imageList = $('#image-list');
 const imageCount = $('#image-count');
@@ -34,6 +37,8 @@ let categories = [];
 let products = [];
 let currentProduct = null;
 let storefrontSetting = null;
+let brandLogoDraft = null;
+let restoreDefaultBrandLogo = false;
 let imageDrafts = [];
 let removedImages = [];
 let usesLegacyFulfillment = false;
@@ -42,6 +47,7 @@ const imageLimit = 8;
 const imageSizeLimit = 25 * 1024 * 1024;
 const storageImageSizeLimit = 10 * 1024 * 1024;
 const acceptedImageTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif']);
+const defaultBrandLogoUrl = '../assets/logo.svg';
 
 function setStatus(element, message = '', isError = false) {
   element.textContent = message;
@@ -125,6 +131,126 @@ async function optimizeImage(file) {
   }
 
   return { blob: file, extension: imageExtension(file.type) };
+}
+
+function currentBrandLogo() {
+  const logo = storefrontSetting?.value?.brand_logo;
+  return logo?.bucket && logo?.path ? logo : null;
+}
+
+function clearBrandLogoDraft() {
+  if (brandLogoDraft?.previewUrl) URL.revokeObjectURL(brandLogoDraft.previewUrl);
+  brandLogoDraft = null;
+  brandLogoInput.value = '';
+}
+
+function showBrandLogo(logo = currentBrandLogo()) {
+  const customLogoUrl = logo ? publicStorageUrl(logo) : '';
+  brandLogoPreview.onerror = () => {
+    brandLogoPreview.onerror = null;
+    brandLogoPreview.src = defaultBrandLogoUrl;
+  };
+  brandLogoPreview.src = customLogoUrl || defaultBrandLogoUrl;
+  document.querySelectorAll('[data-brand-logo]').forEach((image) => {
+    image.onerror = () => {
+      image.onerror = null;
+      image.src = defaultBrandLogoUrl;
+    };
+    image.src = customLogoUrl || defaultBrandLogoUrl;
+  });
+  brandLogoReset.hidden = !customLogoUrl;
+}
+
+function selectBrandLogo(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  if (!acceptedImageTypes.has(file.type)) {
+    event.target.value = '';
+    setStatus(storefrontStatus, 'El logo debe ser PNG, JPEG, WEBP o AVIF.', true);
+    return;
+  }
+  if (file.size > imageSizeLimit) {
+    event.target.value = '';
+    setStatus(storefrontStatus, 'El archivo original del logo no puede superar 25 MB.', true);
+    return;
+  }
+
+  clearBrandLogoDraft();
+  const previewUrl = URL.createObjectURL(file);
+  brandLogoDraft = { file, previewUrl };
+  restoreDefaultBrandLogo = false;
+  brandLogoPreview.src = previewUrl;
+  brandLogoReset.hidden = false;
+  setStatus(storefrontStatus, 'Nuevo logo preparado. Pulsa “Guardar configuración” para publicarlo.');
+}
+
+function resetBrandLogo() {
+  clearBrandLogoDraft();
+  restoreDefaultBrandLogo = true;
+  brandLogoPreview.src = defaultBrandLogoUrl;
+  brandLogoReset.hidden = true;
+  setStatus(storefrontStatus, 'Se restaurará el logo original al guardar la configuración.');
+}
+
+async function uploadBrandLogo(file) {
+  const prepared = await optimizeImage(file);
+  if (prepared.blob.size > storageImageSizeLimit) {
+    throw new Error('El logo sigue ocupando más de 10 MB después de optimizarlo.');
+  }
+
+  const uniquePart = typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const storagePath = `sam/branding/logo-${uniquePart}.${prepared.extension}`;
+
+  await storageRequest(storagePath, {
+    body: prepared.blob,
+    contentType: prepared.blob.type || file.type
+  });
+
+  try {
+    const rows = await rest('files', {
+      method: 'POST',
+      body: {
+        project_id: project.id,
+        bucket: 'sam-public',
+        path: storagePath,
+        original_name: file.name,
+        mime_type: prepared.blob.type || file.type,
+        size_bytes: prepared.blob.size,
+        visibility: 'public',
+        alt_text: 'Logo de SAM',
+        uploaded_by: session.user.id
+      },
+      prefer: 'return=representation'
+    });
+    const storedFile = rows[0];
+    return {
+      id: storedFile.id,
+      bucket: storedFile.bucket,
+      path: storedFile.path,
+      original_name: storedFile.original_name,
+      mime_type: storedFile.mime_type,
+      alt_text: storedFile.alt_text
+    };
+  } catch (error) {
+    await storageRequest(storagePath, { method: 'DELETE' }).catch(() => {});
+    throw error;
+  }
+}
+
+async function deleteBrandLogo(logo) {
+  if (!logo?.path) return;
+  if (logo.id) {
+    await rest('files', {
+      method: 'DELETE',
+      query: { id: `eq.${logo.id}` },
+      prefer: 'return=minimal'
+    });
+  }
+  await storageRequest(logo.path, { method: 'DELETE' }).catch((error) => {
+    console.warn('El logo anterior dejó de utilizarse, pero Storage no pudo limpiarlo.', error);
+  });
 }
 
 function storeSession(value) {
@@ -472,6 +598,7 @@ function fillCategoryOptions() {
 
 function fillStorefrontForm() {
   const value = storefrontSetting?.value || {};
+  if (!brandLogoDraft && !restoreDefaultBrandLogo) showBrandLogo(value.brand_logo);
   $('#contact-name').value = value.contact_name || '';
   $('#contact-whatsapp').value = value.contact_whatsapp || '';
   $('#contact-email').value = value.contact_email || '';
@@ -513,18 +640,27 @@ async function saveStorefront(event) {
     return;
   }
 
-  const value = {
-    ...(storefrontSetting?.value || {}),
-    contact_name: contactName,
-    contact_whatsapp: contactWhatsapp,
-    contact_email: contactEmail,
-    bizum_phone: bizumPhone,
-    wallapop_url: wallapopUrl,
-    wallapop_available: true,
-    commerce_notice_enabled: commerceNoticeEnabled
-  };
-  setStatus(storefrontStatus, 'Guardando contacto…');
+  const previousLogo = currentBrandLogo();
+  let uploadedLogo = null;
+  let settingsSaved = false;
+  const submitButton = storefrontForm.querySelector('[type="submit"]');
+  submitButton.disabled = true;
+  setStatus(storefrontStatus, brandLogoDraft ? 'Optimizando y subiendo el logo…' : 'Guardando configuración…');
   try {
+    if (brandLogoDraft) uploadedLogo = await uploadBrandLogo(brandLogoDraft.file);
+    const selectedLogo = restoreDefaultBrandLogo ? null : (uploadedLogo || previousLogo);
+    const value = {
+      ...(storefrontSetting?.value || {}),
+      contact_name: contactName,
+      contact_whatsapp: contactWhatsapp,
+      contact_email: contactEmail,
+      bizum_phone: bizumPhone,
+      wallapop_url: wallapopUrl,
+      wallapop_available: true,
+      commerce_notice_enabled: commerceNoticeEnabled,
+      brand_logo: selectedLogo
+    };
+
     if (storefrontSetting) {
       await rest('project_settings', {
         method: 'PATCH',
@@ -539,13 +675,26 @@ async function saveStorefront(event) {
         prefer: 'return=minimal'
       });
     }
+    settingsSaved = true;
     storefrontSetting = { key: 'storefront', value, is_public: true };
     $('#contact-whatsapp').value = contactWhatsapp;
     $('#bizum-phone').value = bizumPhone;
     $('#wallapop-url').value = wallapopUrl;
-    setStatus(storefrontStatus, 'Contacto, Bizum y Wallapop guardados. La tienda pública se actualizará al volver a cargar.');
+    clearBrandLogoDraft();
+    restoreDefaultBrandLogo = false;
+    showBrandLogo(selectedLogo);
+
+    if (previousLogo && previousLogo.path !== selectedLogo?.path) {
+      await deleteBrandLogo(previousLogo).catch((error) => {
+        console.warn('La configuración se guardó, pero no se pudo limpiar el logo anterior.', error);
+      });
+    }
+    setStatus(storefrontStatus, 'Logo, contacto, Bizum y Wallapop guardados. La tienda pública se actualizará al volver a cargar.');
   } catch (error) {
+    if (uploadedLogo && !settingsSaved) await deleteBrandLogo(uploadedLogo).catch(() => {});
     setStatus(storefrontStatus, error.message, true);
+  } finally {
+    submitButton.disabled = false;
   }
 }
 
@@ -996,6 +1145,8 @@ $('#cancel-product-button').addEventListener('click', () => productDialog.close(
 $('#delete-product-button').addEventListener('click', deleteProduct);
 productForm.addEventListener('submit', saveProduct);
 storefrontForm.addEventListener('submit', saveStorefront);
+brandLogoInput.addEventListener('change', selectBrandLogo);
+brandLogoReset.addEventListener('click', resetBrandLogo);
 searchInput.addEventListener('input', renderProducts);
 statusFilter.addEventListener('change', renderProducts);
 kindFilter.addEventListener('change', renderProducts);
