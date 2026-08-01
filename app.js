@@ -26,6 +26,7 @@ const briefForm = document.querySelector('#brief-form');
 const formStatus = document.querySelector('#form-status');
 const contactSubmit = document.querySelector('#contact-submit');
 const contactNoteCopy = document.querySelector('#contact-note-copy');
+const ownerWhatsappLink = document.querySelector('#owner-whatsapp-link');
 const commerceSection = document.querySelector('#compra-y-pago');
 const commerceDialog = document.querySelector('#commerce-dialog');
 const commerceDialogClose = document.querySelector('#commerce-dialog-close');
@@ -525,6 +526,18 @@ function updateContactUI() {
   const whatsapp = String(storefrontSettings.contact_whatsapp || '').replace(/\D/g, '');
   const email = String(storefrontSettings.contact_email || '').trim();
   const ownerName = String(storefrontSettings.contact_name || 'el propietario').trim();
+
+  if (ownerWhatsappLink) {
+    if (whatsapp) {
+      const message = `Hola, vengo desde la web de SAM y me gustaría hacer una consulta.`;
+      ownerWhatsappLink.href = `https://wa.me/${whatsapp}?text=${encodeURIComponent(message)}`;
+      ownerWhatsappLink.setAttribute('aria-label', `Contactar con ${ownerName} por WhatsApp`);
+      ownerWhatsappLink.hidden = false;
+    } else {
+      ownerWhatsappLink.removeAttribute('href');
+      ownerWhatsappLink.hidden = true;
+    }
+  }
 
   if (whatsapp) {
     contactSubmit.textContent = 'Escribir por WhatsApp';
