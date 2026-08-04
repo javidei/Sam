@@ -1,8 +1,11 @@
 (() => {
+  let toastTimer = 0;
+
   function initializeAdminFooter() {
     if (document.querySelector('.admin-footer')) return;
 
     const version = String(window.SAM_CONFIG?.webVersion || '1.0.0');
+    const releaseDate = String(window.SAM_CONFIG?.webReleaseDate || 'Sin fecha');
     const footer = document.createElement('footer');
     footer.className = 'admin-footer';
     footer.setAttribute('aria-label', 'Información del panel de administración');
@@ -14,12 +17,98 @@
         </div>
         <div class="admin-footer-meta">
           <span class="admin-footer-version">Versión ${version}</span>
+          <span class="admin-footer-date">Publicada el ${releaseDate}</span>
           <span>Desarrollo: Javier Díaz</span>
           <a href="../">Ver tienda <span aria-hidden="true">→</span></a>
         </div>
       </div>
     `;
     document.body.append(footer);
+  }
+
+  function ensureToast() {
+    let toast = document.querySelector('#admin-action-toast');
+    if (toast) return toast;
+
+    toast = document.createElement('div');
+    toast.id = 'admin-action-toast';
+    toast.className = 'admin-action-toast';
+    toast.hidden = true;
+    toast.setAttribute('role', 'status');
+    toast.setAttribute('aria-live', 'polite');
+    toast.innerHTML = `
+      <span class="admin-action-toast-icon" aria-hidden="true">✓</span>
+      <span class="admin-action-toast-copy">
+        <strong>Operación completada</strong>
+        <small></small>
+      </span>
+      <button type="button" aria-label="Cerrar aviso">×</button>
+    `;
+    toast.querySelector('button').addEventListener('click', () => {
+      toast.hidden = true;
+      toast.classList.remove('is-visible', 'is-error');
+    });
+    document.body.append(toast);
+    return toast;
+  }
+
+  function showToast(message, isError = false, title = '') {
+    if (!message) return;
+    const toast = ensureToast();
+    window.clearTimeout(toastTimer);
+    toast.classList.toggle('is-error', isError);
+    toast.querySelector('.admin-action-toast-icon').textContent = isError ? '!' : '✓';
+    toast.querySelector('strong').textContent = title || (isError ? 'No se pudo completar' : 'Cambios guardados');
+    toast.querySelector('small').textContent = message;
+    toast.hidden = false;
+    window.requestAnimationFrame(() => toast.classList.add('is-visible'));
+    toastTimer = window.setTimeout(() => {
+      toast.classList.remove('is-visible');
+      window.setTimeout(() => { toast.hidden = true; }, 180);
+    }, isError ? 6500 : 4200);
+  }
+
+  function initializeStatusPopups() {
+    const dashboardStatus = document.querySelector('#dashboard-status');
+    const productStatus = document.querySelector('#product-form-status');
+    if (!dashboardStatus || dashboardStatus.dataset.popupReady === 'true') return;
+    dashboardStatus.dataset.popupReady = 'true';
+
+    let lastDashboardMessage = '';
+    const dashboardObserver = new MutationObserver(() => {
+      const message = dashboardStatus.textContent.trim();
+      if (!message || message === lastDashboardMessage) return;
+      lastDashboardMessage = message;
+      const isError = dashboardStatus.classList.contains('is-error');
+      if (isError || /guardad|eliminad|actualizad|publicad|archivad/i.test(message)) {
+        showToast(message, isError);
+      }
+    });
+    dashboardObserver.observe(dashboardStatus, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
+    if (productStatus) {
+      let lastProductError = '';
+      const productObserver = new MutationObserver(() => {
+        const message = productStatus.textContent.trim();
+        const isError = productStatus.classList.contains('is-error');
+        if (!isError || !message || message === lastProductError) return;
+        lastProductError = message;
+        showToast(message, true, 'Revisa el producto');
+      });
+      productObserver.observe(productStatus, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+        attributes: true,
+        attributeFilter: ['class']
+      });
+    }
   }
 
   function initializeAdminFeedback() {
@@ -151,6 +240,12 @@
       if (event.target === dialog) closeDialog();
     });
 
+    window.addEventListener('beforeunload', (event) => {
+      if (!hasUnsavedChanges || savePending) return;
+      event.preventDefault();
+      event.returnValue = '';
+    });
+
     const statusObserver = new MutationObserver(() => {
       if (!savePending) return;
       const message = status.textContent.trim();
@@ -160,6 +255,7 @@
         savePending = false;
         hasUnsavedChanges = true;
         updateButtonState('dirty');
+        showToast(message, true, 'No se guardó la configuración');
         return;
       }
 
@@ -176,6 +272,7 @@
   function initializeAdminPage() {
     initializeAdminFooter();
     initializeAdminFeedback();
+    initializeStatusPopups();
   }
 
   if (document.readyState === 'loading') {
