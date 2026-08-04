@@ -4,15 +4,25 @@
 const samConfig = Object.freeze({
   supabaseUrl: 'https://avboupigkstzprrgvlhr.supabase.co',
   supabasePublishableKey: 'sb_publishable_eyFLhKFk9HXAab4q1cxG4A_-_la1-OI',
-  webVersion: '1.0.1'
+  webVersion: '1.0.2'
 });
 
 window.SAM_CONFIG = samConfig;
 
-// app.js pinta primero el catálogo local y, mientras Supabase responde, parte de una
-// configuración provisional. Esta consulta temprana evita tanto el aviso incorrecto
-// como el parpadeo del logo anterior antes de aplicar la identidad guardada.
 const nativeSetTimeout = window.setTimeout.bind(window);
+
+async function fetchWithTimeout(url, options = {}, timeout = 4500) {
+  const controller = new AbortController();
+  const timer = nativeSetTimeout(() => controller.abort(), timeout);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
+// Consulta temprana de configuración, pero con tiempo límite para que Supabase nunca
+// pueda bloquear el renderizado de la tienda ni dejar el logo invisible.
 const commerceNoticeSetting = (async () => {
   try {
     const headers = {
@@ -26,7 +36,7 @@ const commerceNoticeSetting = (async () => {
       status: 'eq.active',
       limit: '1'
     });
-    const projectResponse = await fetch(projectsUrl, { headers });
+    const projectResponse = await fetchWithTimeout(projectsUrl, { headers });
     if (!projectResponse.ok) throw new Error(`No se pudo leer SAM (${projectResponse.status})`);
     const [project] = await projectResponse.json();
     if (!project?.id) return null;
@@ -38,7 +48,7 @@ const commerceNoticeSetting = (async () => {
       key: 'eq.storefront',
       limit: '1'
     });
-    const settingsResponse = await fetch(settingsUrl, { headers });
+    const settingsResponse = await fetchWithTimeout(settingsUrl, { headers });
     if (!settingsResponse.ok) throw new Error(`No se pudo leer la configuración (${settingsResponse.status})`);
     const [setting] = await settingsResponse.json();
     return setting?.value || null;
@@ -60,43 +70,36 @@ async function prepareStorefrontBranding() {
   const logos = [...document.querySelectorAll('[data-brand-logo]')];
   if (!logos.length) return;
 
-  // Conservamos el espacio del logo para que la cabecera no salte, pero ocultamos el
-  // SVG antiguo hasta conocer y precargar el logo configurado en Supabase.
-  logos.forEach((image) => {
-    image.style.visibility = 'hidden';
-  });
-
-  const revealLogos = () => {
-    window.requestAnimationFrame(() => {
-      logos.forEach((image) => {
-        image.style.visibility = '';
-      });
-    });
-  };
-
+  // El logo local permanece visible siempre. Solo se sustituye cuando el logo guardado
+  // en Supabase se ha descargado y validado correctamente.
   try {
     const storefront = await commerceNoticeSetting;
     const logo = storefront?.brand_logo;
     const logoUrl = publicBrandLogoUrl(logo);
-    if (!logoUrl) {
-      revealLogos();
-      return;
-    }
+    if (!logoUrl) return;
 
     const preloader = new Image();
     const logoLoaded = await new Promise((resolve) => {
-      preloader.onload = () => resolve(true);
-      preloader.onerror = () => resolve(false);
+      let finished = false;
+      const finish = (value) => {
+        if (finished) return;
+        finished = true;
+        resolve(value);
+      };
+      preloader.onload = () => finish(true);
+      preloader.onerror = () => finish(false);
       preloader.src = logoUrl;
-      if (preloader.complete) resolve(preloader.naturalWidth > 0);
+      nativeSetTimeout(() => finish(false), 4500);
+      if (preloader.complete) finish(preloader.naturalWidth > 0);
     });
 
-    if (!logoLoaded) {
-      revealLogos();
-      return;
-    }
+    if (!logoLoaded) return;
 
     logos.forEach((image) => {
+      image.onerror = () => {
+        image.onerror = null;
+        image.src = 'assets/logo.svg';
+      };
       image.src = logoUrl;
       image.closest('.footer-brand')?.classList.add('has-custom-logo');
     });
@@ -106,14 +109,8 @@ async function prepareStorefrontBranding() {
       favicon.href = logoUrl;
       favicon.type = logo.mime_type || 'image/webp';
     }
-
-    await Promise.allSettled(logos.map((image) => (
-      typeof image.decode === 'function' ? image.decode() : Promise.resolve()
-    )));
-    revealLogos();
   } catch (error) {
-    console.warn('No se ha podido precargar el logo personalizado de SAM.', error);
-    revealLogos();
+    console.warn('No se ha podido aplicar el logo personalizado de SAM.', error);
   }
 }
 
@@ -161,30 +158,27 @@ function showSamWebVersion() {
 showSamWebVersion();
 
 if (isAdminPage) {
-  // Confirmación visual, footer y estado del guardado de configuración.
+  // Administración estable: solo footer/confirmación y publicación manual del PDF.
   loadSamAsset('link', {
     rel: 'stylesheet',
-    href: new URL('admin/admin-feedback.css?v=sam-admin-feedback-2', settingsScriptUrl).toString()
+    href: new URL('admin/admin-feedback.css?v=sam-admin-feedback-3', settingsScriptUrl).toString()
   });
   loadSamAsset('script', {
-    src: new URL('admin/admin-feedback.js?v=sam-admin-feedback-2', settingsScriptUrl).toString()
+    src: new URL('admin/admin-feedback.js?v=sam-admin-feedback-3', settingsScriptUrl).toString()
   });
-
-  // Publicación manual del catálogo PDF. La importación desde Excel está desactivada.
   loadSamAsset('link', {
     rel: 'stylesheet',
-    href: new URL('admin/catalog-pdf-admin.css?v=sam-catalog-pdf-admin-1', settingsScriptUrl).toString()
+    href: new URL('admin/catalog-pdf-admin.css?v=sam-catalog-pdf-admin-2', settingsScriptUrl).toString()
   });
   loadSamAsset('script', {
-    src: new URL('admin/catalog-pdf-admin.js?v=sam-catalog-pdf-admin-1', settingsScriptUrl).toString()
+    src: new URL('admin/catalog-pdf-admin.js?v=sam-catalog-pdf-admin-2', settingsScriptUrl).toString()
   });
 } else {
-  // Acceso público al catálogo PDF configurado desde Administración.
   loadSamAsset('link', {
     rel: 'stylesheet',
-    href: new URL('catalog-pdf.css?v=sam-catalog-pdf-1', settingsScriptUrl).toString()
+    href: new URL('catalog-pdf.css?v=sam-catalog-pdf-2', settingsScriptUrl).toString()
   });
   loadSamAsset('script', {
-    src: new URL('catalog-pdf.js?v=sam-catalog-pdf-1', settingsScriptUrl).toString()
+    src: new URL('catalog-pdf.js?v=sam-catalog-pdf-2', settingsScriptUrl).toString()
   });
 }
