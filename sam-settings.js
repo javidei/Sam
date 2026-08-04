@@ -4,7 +4,7 @@
 const samConfig = Object.freeze({
   supabaseUrl: 'https://avboupigkstzprrgvlhr.supabase.co',
   supabasePublishableKey: 'sb_publishable_eyFLhKFk9HXAab4q1cxG4A_-_la1-OI',
-  webVersion: '1.0.0'
+  webVersion: '1.0.1'
 });
 
 window.SAM_CONFIG = samConfig;
@@ -161,22 +161,22 @@ function showSamWebVersion() {
 showSamWebVersion();
 
 if (isAdminPage) {
-  // Confirmación visual del guardado de configuración.
+  // Confirmación visual, footer y estado del guardado de configuración.
   loadSamAsset('link', {
     rel: 'stylesheet',
-    href: new URL('admin/admin-feedback.css?v=sam-admin-feedback-1', settingsScriptUrl).toString()
+    href: new URL('admin/admin-feedback.css?v=sam-admin-feedback-2', settingsScriptUrl).toString()
   });
   loadSamAsset('script', {
-    src: new URL('admin/admin-feedback.js?v=sam-admin-feedback-1', settingsScriptUrl).toString()
+    src: new URL('admin/admin-feedback.js?v=sam-admin-feedback-2', settingsScriptUrl).toString()
   });
 
-  // Importación masiva desde Excel y publicación del catálogo PDF.
+  // Publicación manual del catálogo PDF. La importación desde Excel está desactivada.
   loadSamAsset('link', {
     rel: 'stylesheet',
-    href: new URL('admin/catalog-import.css?v=sam-catalog-import-1', settingsScriptUrl).toString()
+    href: new URL('admin/catalog-pdf-admin.css?v=sam-catalog-pdf-admin-1', settingsScriptUrl).toString()
   });
   loadSamAsset('script', {
-    src: new URL('admin/catalog-import.js?v=sam-catalog-import-1', settingsScriptUrl).toString()
+    src: new URL('admin/catalog-pdf-admin.js?v=sam-catalog-pdf-admin-1', settingsScriptUrl).toString()
   });
 } else {
   // Acceso público al catálogo PDF configurado desde Administración.
