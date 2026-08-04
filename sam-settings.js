@@ -60,3 +60,18 @@ window.setTimeout = function setTimeoutWithCommercePreference(callback, delay, .
     callback(...args);
   }, delay);
 };
+
+// Mejoras específicas del panel de administración. Se cargan desde aquí para mantener
+// el HTML del panel limpio y aplicar siempre la última versión de la confirmación visual.
+if (/\/admin(?:\/(?:index\.html)?)?$/.test(window.location.pathname)) {
+  const settingsScriptUrl = document.currentScript?.src || window.location.href;
+  const feedbackStyles = document.createElement('link');
+  feedbackStyles.rel = 'stylesheet';
+  feedbackStyles.href = new URL('admin/admin-feedback.css?v=sam-admin-feedback-1', settingsScriptUrl).toString();
+  document.head.append(feedbackStyles);
+
+  const feedbackScript = document.createElement('script');
+  feedbackScript.src = new URL('admin/admin-feedback.js?v=sam-admin-feedback-1', settingsScriptUrl).toString();
+  feedbackScript.async = false;
+  document.head.append(feedbackScript);
+}
