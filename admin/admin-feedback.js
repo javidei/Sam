@@ -1,5 +1,175 @@
 (() => {
+  const THEME_KEY = 'sam-theme';
   let toastTimer = 0;
+  let brandingRequest = 0;
+
+  function applyTheme(theme) {
+    const normalizedTheme = theme === 'dark' ? 'dark' : 'light';
+    document.documentElement.dataset.theme = normalizedTheme;
+    localStorage.setItem(THEME_KEY, normalizedTheme);
+
+    const themeColor = document.querySelector('meta[name="theme-color"]');
+    if (themeColor) themeColor.content = normalizedTheme === 'dark' ? '#17151a' : '#262329';
+
+    document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
+      const isDark = normalizedTheme === 'dark';
+      button.setAttribute('aria-pressed', String(isDark));
+      button.title = isDark ? 'Cambiar a modo claro' : 'Cambiar a modo noche';
+      const icon = button.querySelector('.sam-theme-toggle-icon');
+      const label = button.querySelector('.sam-theme-toggle-label');
+      if (icon) icon.textContent = isDark ? '☀' : '☾';
+      if (label) label.textContent = isDark ? 'Modo claro' : 'Modo noche';
+    });
+  }
+
+  function initializeThemeToggle() {
+    const actions = document.querySelector('.topbar-actions');
+    if (!actions || actions.querySelector('[data-theme-toggle]')) return;
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'sam-theme-toggle sam-theme-toggle--admin';
+    button.dataset.themeToggle = '';
+    button.innerHTML = `
+      <span class="sam-theme-toggle-icon" aria-hidden="true"></span>
+      <span class="sam-theme-toggle-label"></span>
+    `;
+    button.addEventListener('click', () => {
+      applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+    });
+
+    const backLink = actions.querySelector('.back');
+    actions.insertBefore(button, backLink || null);
+    applyTheme(document.documentElement.dataset.theme || localStorage.getItem(THEME_KEY));
+  }
+
+  function databaseBrandTargets() {
+    const topbarLogo = document.querySelector('.topbar img[alt="SAM"]');
+    const previewLogo = document.querySelector('#brand-logo-preview');
+    if (topbarLogo) topbarLogo.dataset.brandLogo = '';
+    return [topbarLogo, previewLogo].filter(Boolean);
+  }
+
+  function publicBrandLogoUrl(logo) {
+    const config = window.SAM_CONFIG || {};
+    const baseUrl = String(config.supabaseUrl || '').replace(/\/$/, '');
+    if (!baseUrl || !logo?.bucket || !logo?.path) return '';
+    const encodedPath = String(logo.path).split('/').map(encodeURIComponent).join('/');
+    return `${baseUrl}/storage/v1/object/public/${encodeURIComponent(logo.bucket)}/${encodedPath}`;
+  }
+
+  async function fetchWithTimeout(url, options = {}, timeout = 4500) {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), timeout);
+    try {
+      return await fetch(url, { ...options, signal: controller.signal });
+    } finally {
+      window.clearTimeout(timer);
+    }
+  }
+
+  async function loadDatabaseBranding() {
+    const requestId = ++brandingRequest;
+    const targets = databaseBrandTargets();
+    targets.forEach((image) => {
+      image.removeAttribute('data-bbdd-logo-ready');
+      image.removeAttribute('src');
+    });
+
+    const config = window.SAM_CONFIG || {};
+    const baseUrl = String(config.supabaseUrl || '').replace(/\/$/, '');
+    const key = String(config.supabasePublishableKey || config.supabaseAnonKey || '');
+    if (!baseUrl || !key) return;
+
+    try {
+      const headers = { apikey: key, Authorization: `Bearer ${key}` };
+      const projectsUrl = new URL(`${baseUrl}/rest/v1/projects`);
+      projectsUrl.search = new URLSearchParams({
+        select: 'id',
+        slug: 'eq.sam',
+        status: 'eq.active',
+        limit: '1'
+      });
+      const projectResponse = await fetchWithTimeout(projectsUrl, { headers });
+      if (!projectResponse.ok) throw new Error(`No se pudo leer SAM (${projectResponse.status})`);
+      const [project] = await projectResponse.json();
+      if (!project?.id || requestId !== brandingRequest) return;
+
+      const settingsUrl = new URL(`${baseUrl}/rest/v1/project_settings`);
+      settingsUrl.search = new URLSearchParams({
+        select: 'value',
+        project_id: `eq.${project.id}`,
+        key: 'eq.storefront',
+        limit: '1'
+      });
+      const settingsResponse = await fetchWithTimeout(settingsUrl, { headers });
+      if (!settingsResponse.ok) throw new Error(`No se pudo leer la configuración (${settingsResponse.status})`);
+      const [setting] = await settingsResponse.json();
+      const logo = setting?.value?.brand_logo;
+      const logoUrl = publicBrandLogoUrl(logo);
+      if (!logoUrl || requestId !== brandingRequest) return;
+
+      const preloader = new Image();
+      const loaded = await new Promise((resolve) => {
+        let finished = false;
+        const finish = (value) => {
+          if (finished) return;
+          finished = true;
+          resolve(value);
+        };
+        preloader.onload = () => finish(true);
+        preloader.onerror = () => finish(false);
+        preloader.src = logoUrl;
+        window.setTimeout(() => finish(false), 4500);
+        if (preloader.complete) finish(preloader.naturalWidth > 0);
+      });
+      if (!loaded || requestId !== brandingRequest) return;
+
+      targets.forEach((image) => {
+        image.onerror = () => {
+          image.removeAttribute('data-bbdd-logo-ready');
+          image.removeAttribute('src');
+        };
+        image.src = logoUrl;
+        image.dataset.bbddLogoReady = 'true';
+        image.dataset.logoSource = 'database';
+      });
+
+      const favicon = document.querySelector('link[rel="icon"]');
+      if (favicon) {
+        favicon.href = logoUrl;
+        favicon.type = logo?.mime_type || 'image/webp';
+      }
+    } catch (error) {
+      console.warn('No se ha podido cargar el logo de Supabase en Administración.', error);
+    }
+  }
+
+  function initializeDatabaseBranding() {
+    const preview = document.querySelector('#brand-logo-preview');
+    const input = document.querySelector('#brand-logo-input');
+    const reset = document.querySelector('#brand-logo-reset');
+
+    databaseBrandTargets().forEach((image) => {
+      image.removeAttribute('data-bbdd-logo-ready');
+      image.removeAttribute('src');
+    });
+
+    input?.addEventListener('change', () => {
+      if (input.files?.[0] && preview) preview.dataset.bbddLogoReady = 'draft';
+    });
+
+    reset?.addEventListener('click', () => {
+      window.setTimeout(() => {
+        if (!preview) return;
+        preview.removeAttribute('data-bbdd-logo-ready');
+        preview.removeAttribute('src');
+      }, 0);
+    });
+
+    loadDatabaseBranding();
+    window.SAM_RELOAD_DATABASE_BRANDING = loadDatabaseBranding;
+  }
 
   function initializeAdminFooter() {
     if (document.querySelector('.admin-footer')) return;
@@ -264,12 +434,15 @@
         hasUnsavedChanges = false;
         updateButtonState('saved');
         openDialog();
+        window.setTimeout(loadDatabaseBranding, 180);
       }
     });
     statusObserver.observe(status, { childList: true, subtree: true, characterData: true, attributes: true });
   }
 
   function initializeAdminPage() {
+    initializeThemeToggle();
+    initializeDatabaseBranding();
     initializeAdminFooter();
     initializeAdminFeedback();
     initializeStatusPopups();
