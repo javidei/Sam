@@ -4,22 +4,78 @@
 const samConfig = Object.freeze({
   supabaseUrl: 'https://avboupigkstzprrgvlhr.supabase.co',
   supabasePublishableKey: 'sb_publishable_eyFLhKFk9HXAab4q1cxG4A_-_la1-OI',
-  webVersion: '1.0.4',
+  webVersion: '1.0.5',
   webReleaseDate: '05/08/2026'
 });
 
 window.SAM_CONFIG = samConfig;
 
 (() => {
+  const THEME_KEY = 'sam-theme';
   const isAdminPage = /\/admin(?:\/(?:index\.html)?)?$/.test(window.location.pathname);
+  const savedTheme = localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light';
+  document.documentElement.dataset.theme = savedTheme;
 
-  // Administración solo recibe la configuración anterior. Sus mejoras visuales y el
-  // gestor del PDF se cargan después de admin.js desde admin/index.html para que nunca
-  // puedan bloquear la pantalla de acceso.
+  // Administración recibe únicamente la configuración y el tema. El resto de mejoras
+  // se carga después de admin.js para que no pueda bloquear la pantalla de acceso.
   if (isAdminPage) return;
 
   const nativeSetTimeout = window.setTimeout.bind(window);
   const settingsScriptUrl = document.currentScript?.src || window.location.href;
+  const brandingGuard = document.createElement('style');
+  brandingGuard.id = 'sam-database-branding-guard';
+  brandingGuard.textContent = '[data-brand-logo]{visibility:hidden!important}';
+  document.head.append(brandingGuard);
+
+  function loadSamAsset(tagName, attributes) {
+    const element = document.createElement(tagName);
+    Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, value));
+    document.head.append(element);
+    return element;
+  }
+
+  loadSamAsset('link', {
+    rel: 'stylesheet',
+    href: new URL('theme.css?v=sam-theme-1', settingsScriptUrl).toString()
+  });
+
+  function applyTheme(theme) {
+    const normalizedTheme = theme === 'dark' ? 'dark' : 'light';
+    document.documentElement.dataset.theme = normalizedTheme;
+    localStorage.setItem(THEME_KEY, normalizedTheme);
+
+    const themeColor = document.querySelector('meta[name="theme-color"]');
+    if (themeColor) themeColor.content = normalizedTheme === 'dark' ? '#17151a' : '#f6c83d';
+
+    document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
+      const isDark = normalizedTheme === 'dark';
+      button.setAttribute('aria-pressed', String(isDark));
+      button.title = isDark ? 'Cambiar a modo claro' : 'Cambiar a modo noche';
+      const icon = button.querySelector('.sam-theme-toggle-icon');
+      const label = button.querySelector('.sam-theme-toggle-label');
+      if (icon) icon.textContent = isDark ? '☀' : '☾';
+      if (label) label.textContent = isDark ? 'Modo claro' : 'Modo noche';
+    });
+  }
+
+  function initializeThemeToggle() {
+    const header = document.querySelector('.header-inner');
+    if (!header || header.querySelector('[data-theme-toggle]')) return;
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'sam-theme-toggle sam-theme-toggle--public';
+    button.dataset.themeToggle = '';
+    button.innerHTML = `
+      <span class="sam-theme-toggle-icon" aria-hidden="true"></span>
+      <span class="sam-theme-toggle-label"></span>
+    `;
+    button.addEventListener('click', () => {
+      applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+    });
+    header.append(button);
+    applyTheme(document.documentElement.dataset.theme);
+  }
 
   async function fetchWithTimeout(url, options = {}, timeout = 4500) {
     const controller = new AbortController();
@@ -74,11 +130,21 @@ window.SAM_CONFIG = samConfig;
 
   async function prepareStorefrontBranding() {
     const logos = [...document.querySelectorAll('[data-brand-logo]')];
+    const favicon = document.querySelector('[data-brand-favicon]');
+
+    // Se elimina inmediatamente cualquier referencia al SVG local. Hasta que el logo
+    // guardado en Supabase esté precargado no se muestra ninguna imagen de marca.
+    logos.forEach((image) => image.removeAttribute('src'));
+    if (favicon) {
+      favicon.href = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg"/%3E';
+    }
+
     if (!logos.length) return;
 
     try {
       const storefront = await commerceNoticeSetting;
-      const logoUrl = publicBrandLogoUrl(storefront?.brand_logo);
+      const logo = storefront?.brand_logo;
+      const logoUrl = publicBrandLogoUrl(logo);
       if (!logoUrl) return;
 
       const preloader = new Image();
@@ -100,17 +166,27 @@ window.SAM_CONFIG = samConfig;
 
       logos.forEach((image) => {
         image.onerror = () => {
-          image.onerror = null;
-          image.src = 'assets/logo.svg';
+          image.removeAttribute('src');
+          image.style.visibility = 'hidden';
         };
         image.src = logoUrl;
+        image.dataset.logoSource = 'database';
         image.closest('.footer-brand')?.classList.add('has-custom-logo');
       });
 
-      const favicon = document.querySelector('[data-brand-favicon]');
-      if (favicon) favicon.href = logoUrl;
+      await Promise.allSettled(logos.map((image) => (
+        typeof image.decode === 'function' ? image.decode() : Promise.resolve()
+      )));
+
+      brandingGuard.remove();
+      logos.forEach((image) => { image.style.visibility = ''; });
+
+      if (favicon) {
+        favicon.href = logoUrl;
+        favicon.type = logo?.mime_type || 'image/webp';
+      }
     } catch (error) {
-      console.warn('No se ha podido aplicar el logo personalizado de SAM.', error);
+      console.warn('No se ha podido aplicar el logo guardado en Supabase.', error);
     }
   }
 
@@ -128,13 +204,6 @@ window.SAM_CONFIG = samConfig;
     }, delay);
   };
 
-  function loadSamAsset(tagName, attributes) {
-    const element = document.createElement(tagName);
-    Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, value));
-    document.head.append(element);
-    return element;
-  }
-
   function showSamWebVersion() {
     const footerBottom = document.querySelector('.footer-bottom');
     if (!footerBottom || footerBottom.querySelector('[data-sam-version]')) return;
@@ -146,14 +215,15 @@ window.SAM_CONFIG = samConfig;
     footerBottom.append(version);
   }
 
+  initializeThemeToggle();
   prepareStorefrontBranding();
   showSamWebVersion();
 
   loadSamAsset('link', {
     rel: 'stylesheet',
-    href: new URL('catalog-pdf.css?v=sam-catalog-pdf-4', settingsScriptUrl).toString()
+    href: new URL('catalog-pdf.css?v=sam-catalog-pdf-5', settingsScriptUrl).toString()
   });
   loadSamAsset('script', {
-    src: new URL('catalog-pdf.js?v=sam-catalog-pdf-4', settingsScriptUrl).toString()
+    src: new URL('catalog-pdf.js?v=sam-catalog-pdf-5', settingsScriptUrl).toString()
   });
 })();
