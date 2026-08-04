@@ -4,181 +4,155 @@
 const samConfig = Object.freeze({
   supabaseUrl: 'https://avboupigkstzprrgvlhr.supabase.co',
   supabasePublishableKey: 'sb_publishable_eyFLhKFk9HXAab4q1cxG4A_-_la1-OI',
-  webVersion: '1.0.2'
+  webVersion: '1.0.3'
 });
 
 window.SAM_CONFIG = samConfig;
 
-const nativeSetTimeout = window.setTimeout.bind(window);
+(() => {
+  const isAdminPage = /\/admin(?:\/(?:index\.html)?)?$/.test(window.location.pathname);
 
-async function fetchWithTimeout(url, options = {}, timeout = 4500) {
-  const controller = new AbortController();
-  const timer = nativeSetTimeout(() => controller.abort(), timeout);
-  try {
-    return await fetch(url, { ...options, signal: controller.signal });
-  } finally {
-    window.clearTimeout(timer);
-  }
-}
-
-// Consulta temprana de configuración, pero con tiempo límite para que Supabase nunca
-// pueda bloquear el renderizado de la tienda ni dejar el logo invisible.
-const commerceNoticeSetting = (async () => {
-  try {
-    const headers = {
-      apikey: samConfig.supabasePublishableKey,
-      Authorization: `Bearer ${samConfig.supabasePublishableKey}`
-    };
-    const projectsUrl = new URL(`${samConfig.supabaseUrl}/rest/v1/projects`);
-    projectsUrl.search = new URLSearchParams({
-      select: 'id',
-      slug: 'eq.sam',
-      status: 'eq.active',
-      limit: '1'
-    });
-    const projectResponse = await fetchWithTimeout(projectsUrl, { headers });
-    if (!projectResponse.ok) throw new Error(`No se pudo leer SAM (${projectResponse.status})`);
-    const [project] = await projectResponse.json();
-    if (!project?.id) return null;
-
-    const settingsUrl = new URL(`${samConfig.supabaseUrl}/rest/v1/project_settings`);
-    settingsUrl.search = new URLSearchParams({
-      select: 'value',
-      project_id: `eq.${project.id}`,
-      key: 'eq.storefront',
-      limit: '1'
-    });
-    const settingsResponse = await fetchWithTimeout(settingsUrl, { headers });
-    if (!settingsResponse.ok) throw new Error(`No se pudo leer la configuración (${settingsResponse.status})`);
-    const [setting] = await settingsResponse.json();
-    return setting?.value || null;
-  } catch (error) {
-    console.warn('No se pudo comprobar la configuración pública de SAM.', error);
-    return null;
-  }
-})();
-
-function publicBrandLogoUrl(logo) {
-  if (!logo?.bucket || !logo?.path) return '';
-  const encodedPath = String(logo.path).split('/').map(encodeURIComponent).join('/');
-  return `${samConfig.supabaseUrl}/storage/v1/object/public/${encodeURIComponent(logo.bucket)}/${encodedPath}`;
-}
-
-async function prepareStorefrontBranding() {
-  if (/\/admin(?:\/|$)/.test(window.location.pathname)) return;
-
-  const logos = [...document.querySelectorAll('[data-brand-logo]')];
-  if (!logos.length) return;
-
-  // El logo local permanece visible siempre. Solo se sustituye cuando el logo guardado
-  // en Supabase se ha descargado y validado correctamente.
-  try {
-    const storefront = await commerceNoticeSetting;
-    const logo = storefront?.brand_logo;
-    const logoUrl = publicBrandLogoUrl(logo);
-    if (!logoUrl) return;
-
-    const preloader = new Image();
-    const logoLoaded = await new Promise((resolve) => {
-      let finished = false;
-      const finish = (value) => {
-        if (finished) return;
-        finished = true;
-        resolve(value);
-      };
-      preloader.onload = () => finish(true);
-      preloader.onerror = () => finish(false);
-      preloader.src = logoUrl;
-      nativeSetTimeout(() => finish(false), 4500);
-      if (preloader.complete) finish(preloader.naturalWidth > 0);
-    });
-
-    if (!logoLoaded) return;
-
-    logos.forEach((image) => {
-      image.onerror = () => {
-        image.onerror = null;
-        image.src = 'assets/logo.svg';
-      };
-      image.src = logoUrl;
-      image.closest('.footer-brand')?.classList.add('has-custom-logo');
-    });
-
-    const favicon = document.querySelector('[data-brand-favicon]');
-    if (favicon) {
-      favicon.href = logoUrl;
-      favicon.type = logo.mime_type || 'image/webp';
-    }
-  } catch (error) {
-    console.warn('No se ha podido aplicar el logo personalizado de SAM.', error);
-  }
-}
-
-prepareStorefrontBranding();
-
-window.setTimeout = function setTimeoutWithCommercePreference(callback, delay, ...args) {
-  const isCommerceNotice = typeof callback === 'function'
-    && callback.name === 'showCommerceDialog'
-    && Number(delay) === 350;
-
-  if (!isCommerceNotice) return nativeSetTimeout(callback, delay, ...args);
-
-  return nativeSetTimeout(async () => {
-    const storefront = await commerceNoticeSetting;
-    if (storefront?.commerce_notice_enabled === false) return;
-    callback(...args);
-  }, delay);
-};
-
-function loadSamAsset(tagName, attributes) {
-  const element = document.createElement(tagName);
-  Object.entries(attributes).forEach(([key, value]) => {
-    if (key === 'textContent') element.textContent = value;
-    else element.setAttribute(key, value);
-  });
-  document.head.append(element);
-  return element;
-}
-
-const settingsScriptUrl = document.currentScript?.src || window.location.href;
-const isAdminPage = /\/admin(?:\/(?:index\.html)?)?$/.test(window.location.pathname);
-
-function showSamWebVersion() {
+  // La pantalla de acceso debe depender únicamente de admin.js.
+  // Ninguna mejora opcional, consulta pública o personalización del escaparate se
+  // ejecuta antes de iniciar sesión, de modo que un fallo externo no pueda bloquearla.
   if (isAdminPage) return;
-  const footerBottom = document.querySelector('.footer-bottom');
-  if (!footerBottom || footerBottom.querySelector('[data-sam-version]')) return;
 
-  const version = document.createElement('p');
-  version.dataset.samVersion = '';
-  version.textContent = `Versión ${samConfig.webVersion}`;
-  version.title = 'Versión actual de la web';
-  footerBottom.append(version);
-}
+  const nativeSetTimeout = window.setTimeout.bind(window);
+  const settingsScriptUrl = document.currentScript?.src || window.location.href;
 
-showSamWebVersion();
+  async function fetchWithTimeout(url, options = {}, timeout = 4500) {
+    const controller = new AbortController();
+    const timer = nativeSetTimeout(() => controller.abort(), timeout);
+    try {
+      return await fetch(url, { ...options, signal: controller.signal });
+    } finally {
+      window.clearTimeout(timer);
+    }
+  }
 
-if (isAdminPage) {
-  // Administración estable: solo footer/confirmación y publicación manual del PDF.
+  const commerceNoticeSetting = (async () => {
+    try {
+      const headers = {
+        apikey: samConfig.supabasePublishableKey,
+        Authorization: `Bearer ${samConfig.supabasePublishableKey}`
+      };
+      const projectsUrl = new URL(`${samConfig.supabaseUrl}/rest/v1/projects`);
+      projectsUrl.search = new URLSearchParams({
+        select: 'id',
+        slug: 'eq.sam',
+        status: 'eq.active',
+        limit: '1'
+      });
+      const projectResponse = await fetchWithTimeout(projectsUrl, { headers });
+      if (!projectResponse.ok) throw new Error(`No se pudo leer SAM (${projectResponse.status})`);
+      const [project] = await projectResponse.json();
+      if (!project?.id) return null;
+
+      const settingsUrl = new URL(`${samConfig.supabaseUrl}/rest/v1/project_settings`);
+      settingsUrl.search = new URLSearchParams({
+        select: 'value',
+        project_id: `eq.${project.id}`,
+        key: 'eq.storefront',
+        limit: '1'
+      });
+      const settingsResponse = await fetchWithTimeout(settingsUrl, { headers });
+      if (!settingsResponse.ok) throw new Error(`No se pudo leer la configuración (${settingsResponse.status})`);
+      const [setting] = await settingsResponse.json();
+      return setting?.value || null;
+    } catch (error) {
+      console.warn('No se pudo comprobar la configuración pública de SAM.', error);
+      return null;
+    }
+  })();
+
+  function publicBrandLogoUrl(logo) {
+    if (!logo?.bucket || !logo?.path) return '';
+    const encodedPath = String(logo.path).split('/').map(encodeURIComponent).join('/');
+    return `${samConfig.supabaseUrl}/storage/v1/object/public/${encodeURIComponent(logo.bucket)}/${encodedPath}`;
+  }
+
+  async function prepareStorefrontBranding() {
+    const logos = [...document.querySelectorAll('[data-brand-logo]')];
+    if (!logos.length) return;
+
+    try {
+      const storefront = await commerceNoticeSetting;
+      const logoUrl = publicBrandLogoUrl(storefront?.brand_logo);
+      if (!logoUrl) return;
+
+      const preloader = new Image();
+      const logoLoaded = await new Promise((resolve) => {
+        let finished = false;
+        const finish = (value) => {
+          if (finished) return;
+          finished = true;
+          resolve(value);
+        };
+        preloader.onload = () => finish(true);
+        preloader.onerror = () => finish(false);
+        preloader.src = logoUrl;
+        nativeSetTimeout(() => finish(false), 4500);
+        if (preloader.complete) finish(preloader.naturalWidth > 0);
+      });
+
+      if (!logoLoaded) return;
+
+      logos.forEach((image) => {
+        image.onerror = () => {
+          image.onerror = null;
+          image.src = 'assets/logo.svg';
+        };
+        image.src = logoUrl;
+        image.closest('.footer-brand')?.classList.add('has-custom-logo');
+      });
+
+      const favicon = document.querySelector('[data-brand-favicon]');
+      if (favicon) favicon.href = logoUrl;
+    } catch (error) {
+      console.warn('No se ha podido aplicar el logo personalizado de SAM.', error);
+    }
+  }
+
+  window.setTimeout = function setTimeoutWithCommercePreference(callback, delay, ...args) {
+    const isCommerceNotice = typeof callback === 'function'
+      && callback.name === 'showCommerceDialog'
+      && Number(delay) === 350;
+
+    if (!isCommerceNotice) return nativeSetTimeout(callback, delay, ...args);
+
+    return nativeSetTimeout(async () => {
+      const storefront = await commerceNoticeSetting;
+      if (storefront?.commerce_notice_enabled === false) return;
+      callback(...args);
+    }, delay);
+  };
+
+  function loadSamAsset(tagName, attributes) {
+    const element = document.createElement(tagName);
+    Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, value));
+    document.head.append(element);
+    return element;
+  }
+
+  function showSamWebVersion() {
+    const footerBottom = document.querySelector('.footer-bottom');
+    if (!footerBottom || footerBottom.querySelector('[data-sam-version]')) return;
+
+    const version = document.createElement('p');
+    version.dataset.samVersion = '';
+    version.textContent = `Versión ${samConfig.webVersion}`;
+    version.title = 'Versión actual de la web';
+    footerBottom.append(version);
+  }
+
+  prepareStorefrontBranding();
+  showSamWebVersion();
+
   loadSamAsset('link', {
     rel: 'stylesheet',
-    href: new URL('admin/admin-feedback.css?v=sam-admin-feedback-3', settingsScriptUrl).toString()
+    href: new URL('catalog-pdf.css?v=sam-catalog-pdf-3', settingsScriptUrl).toString()
   });
   loadSamAsset('script', {
-    src: new URL('admin/admin-feedback.js?v=sam-admin-feedback-3', settingsScriptUrl).toString()
+    src: new URL('catalog-pdf.js?v=sam-catalog-pdf-3', settingsScriptUrl).toString()
   });
-  loadSamAsset('link', {
-    rel: 'stylesheet',
-    href: new URL('admin/catalog-pdf-admin.css?v=sam-catalog-pdf-admin-2', settingsScriptUrl).toString()
-  });
-  loadSamAsset('script', {
-    src: new URL('admin/catalog-pdf-admin.js?v=sam-catalog-pdf-admin-2', settingsScriptUrl).toString()
-  });
-} else {
-  loadSamAsset('link', {
-    rel: 'stylesheet',
-    href: new URL('catalog-pdf.css?v=sam-catalog-pdf-2', settingsScriptUrl).toString()
-  });
-  loadSamAsset('script', {
-    src: new URL('catalog-pdf.js?v=sam-catalog-pdf-2', settingsScriptUrl).toString()
-  });
-}
+})();
