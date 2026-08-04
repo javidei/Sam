@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 82" role="img" aria-labelledby="title desc">
+  <title id="title">SAM</title>
+  <desc id="desc">Servicios, arte y más</desc>
+  <g font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="52">
+    <text x="5" y="55" fill="#de367d" transform="rotate(-2 5 55)">S</text>
+    <text x="48" y="55" fill="#1ba4b3">A</text>
+    <text x="96" y="55" fill="#bb8700" transform="rotate(2 96 55)">M</text>
+  </g>
+  <text x="8" y="76" fill="#262329" font-family="Arial, sans-serif" font-size="7.5" font-weight="700" letter-spacing="2.2">SERVICIOS · ARTE · MÁS</text>
+</svg>
