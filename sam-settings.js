@@ -22,6 +22,7 @@ window.SAM_CONFIG = samConfig;
 
   const nativeSetTimeout = window.setTimeout.bind(window);
   const settingsScriptUrl = document.currentScript?.src || window.location.href;
+  const brandingObservers = [];
   const brandingGuard = document.createElement('style');
   brandingGuard.id = 'sam-database-branding-guard';
   brandingGuard.textContent = '[data-brand-logo]{visibility:hidden!important}';
@@ -128,13 +129,45 @@ window.SAM_CONFIG = samConfig;
     return `${samConfig.supabaseUrl}/storage/v1/object/public/${encodeURIComponent(logo.bucket)}/${encodedPath}`;
   }
 
+  function isLocalLogoReference(value) {
+    return /(?:^|\/)assets\/logo\.svg(?:[?#]|$)/i.test(String(value || ''));
+  }
+
+  function protectDatabaseLogo(image) {
+    if (!image || image.dataset.databaseLogoProtected === 'true') return;
+    image.dataset.databaseLogoProtected = 'true';
+    const observer = new MutationObserver(() => {
+      const src = image.getAttribute('src');
+      if (!isLocalLogoReference(src)) return;
+      image.removeAttribute('src');
+      image.style.visibility = 'hidden';
+    });
+    observer.observe(image, { attributes: true, attributeFilter: ['src'] });
+    brandingObservers.push(observer);
+  }
+
+  function protectDatabaseFavicon(favicon) {
+    if (!favicon) return;
+    const observer = new MutationObserver(() => {
+      const href = favicon.getAttribute('href');
+      if (!isLocalLogoReference(href)) return;
+      favicon.href = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg"/%3E';
+    });
+    observer.observe(favicon, { attributes: true, attributeFilter: ['href'] });
+    brandingObservers.push(observer);
+  }
+
   async function prepareStorefrontBranding() {
     const logos = [...document.querySelectorAll('[data-brand-logo]')];
     const favicon = document.querySelector('[data-brand-favicon]');
 
-    // Se elimina inmediatamente cualquier referencia al SVG local. Hasta que el logo
-    // guardado en Supabase esté precargado no se muestra ninguna imagen de marca.
-    logos.forEach((image) => image.removeAttribute('src'));
+    // Se elimina inmediatamente cualquier referencia al SVG local. Además, se vigila
+    // que ningún código posterior pueda volver a colocarlo mientras se carga Supabase.
+    logos.forEach((image) => {
+      protectDatabaseLogo(image);
+      image.removeAttribute('src');
+    });
+    protectDatabaseFavicon(favicon);
     if (favicon) {
       favicon.href = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg"/%3E';
     }
