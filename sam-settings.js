@@ -9,8 +9,8 @@ const samConfig = Object.freeze({
 window.SAM_CONFIG = samConfig;
 
 // app.js pinta primero el catálogo local y, mientras Supabase responde, parte de una
-// configuración provisional. Evitamos que ese primer pintado abra el aviso si el
-// propietario lo ha desactivado en project_settings.storefront.
+// configuración provisional. Esta consulta temprana evita tanto el aviso incorrecto
+// como el parpadeo del logo anterior antes de aplicar la identidad guardada.
 const nativeSetTimeout = window.setTimeout.bind(window);
 const commerceNoticeSetting = (async () => {
   try {
@@ -42,10 +42,81 @@ const commerceNoticeSetting = (async () => {
     const [setting] = await settingsResponse.json();
     return setting?.value || null;
   } catch (error) {
-    console.warn('No se pudo comprobar la preferencia del aviso de Bizum y Wallapop.', error);
+    console.warn('No se pudo comprobar la configuración pública de SAM.', error);
     return null;
   }
 })();
+
+function publicBrandLogoUrl(logo) {
+  if (!logo?.bucket || !logo?.path) return '';
+  const encodedPath = String(logo.path).split('/').map(encodeURIComponent).join('/');
+  return `${samConfig.supabaseUrl}/storage/v1/object/public/${encodeURIComponent(logo.bucket)}/${encodedPath}`;
+}
+
+async function prepareStorefrontBranding() {
+  if (/\/admin(?:\/|$)/.test(window.location.pathname)) return;
+
+  const logos = [...document.querySelectorAll('[data-brand-logo]')];
+  if (!logos.length) return;
+
+  // Conservamos el espacio del logo para que la cabecera no salte, pero ocultamos el
+  // SVG antiguo hasta conocer y precargar el logo configurado en Supabase.
+  logos.forEach((image) => {
+    image.style.visibility = 'hidden';
+  });
+
+  const revealLogos = () => {
+    window.requestAnimationFrame(() => {
+      logos.forEach((image) => {
+        image.style.visibility = '';
+      });
+    });
+  };
+
+  try {
+    const storefront = await commerceNoticeSetting;
+    const logo = storefront?.brand_logo;
+    const logoUrl = publicBrandLogoUrl(logo);
+    if (!logoUrl) {
+      revealLogos();
+      return;
+    }
+
+    const preloader = new Image();
+    const logoLoaded = await new Promise((resolve) => {
+      preloader.onload = () => resolve(true);
+      preloader.onerror = () => resolve(false);
+      preloader.src = logoUrl;
+      if (preloader.complete) resolve(preloader.naturalWidth > 0);
+    });
+
+    if (!logoLoaded) {
+      revealLogos();
+      return;
+    }
+
+    logos.forEach((image) => {
+      image.src = logoUrl;
+      image.closest('.footer-brand')?.classList.add('has-custom-logo');
+    });
+
+    const favicon = document.querySelector('[data-brand-favicon]');
+    if (favicon) {
+      favicon.href = logoUrl;
+      favicon.type = logo.mime_type || 'image/webp';
+    }
+
+    await Promise.allSettled(logos.map((image) => (
+      typeof image.decode === 'function' ? image.decode() : Promise.resolve()
+    )));
+    revealLogos();
+  } catch (error) {
+    console.warn('No se ha podido precargar el logo personalizado de SAM.', error);
+    revealLogos();
+  }
+}
+
+prepareStorefrontBranding();
 
 window.setTimeout = function setTimeoutWithCommercePreference(callback, delay, ...args) {
   const isCommerceNotice = typeof callback === 'function'
