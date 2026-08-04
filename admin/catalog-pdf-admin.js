@@ -7,6 +7,8 @@
   let project = null;
   let settingRow = null;
   let busy = false;
+  let contextLoading = false;
+  let contextLoaded = false;
 
   function session() {
     try {
@@ -22,6 +24,11 @@
       url: String(value.supabaseUrl || '').replace(/\/$/, ''),
       key: String(value.supabasePublishableKey || value.supabaseAnonKey || '')
     };
+  }
+
+  function dashboardReady() {
+    const dashboard = document.querySelector('#dashboard-view');
+    return Boolean(dashboard && !dashboard.hidden && session()?.access_token);
   }
 
   function headers(extra = {}) {
@@ -93,32 +100,54 @@
     if (!dialog) return;
     dialog.querySelector('h2').textContent = title;
     dialog.querySelector('[data-summary-copy]').textContent = body;
-    if (typeof dialog.showModal === 'function') dialog.showModal();
-    else dialog.setAttribute('open', '');
+    try {
+      if (typeof dialog.showModal === 'function') dialog.showModal();
+      else dialog.setAttribute('open', '');
+    } catch (error) {
+      console.warn('No se pudo abrir el aviso del PDF.', error);
+    }
   }
 
   async function loadProjectContext() {
-    const projects = await rest('projects', {
-      query: {
-        select: 'id,name,slug',
-        slug: 'eq.sam',
-        status: 'eq.active',
-        limit: '1'
-      }
-    });
-    project = projects?.[0];
-    if (!project) throw new Error('No se encuentra el proyecto activo de SAM.');
+    if (contextLoading || !dashboardReady()) return;
+    contextLoading = true;
+    try {
+      const projects = await rest('projects', {
+        query: {
+          select: 'id,name,slug',
+          slug: 'eq.sam',
+          status: 'eq.active',
+          limit: '1'
+        }
+      });
+      project = projects?.[0];
+      if (!project) throw new Error('No se encuentra el proyecto activo de SAM.');
 
-    const settings = await rest('project_settings', {
-      query: {
-        select: 'key,value,is_public',
-        project_id: `eq.${project.id}`,
-        key: 'eq.storefront',
-        limit: '1'
-      }
-    });
-    settingRow = settings?.[0] || null;
-    updatePdfCurrent();
+      const settings = await rest('project_settings', {
+        query: {
+          select: 'key,value,is_public',
+          project_id: `eq.${project.id}`,
+          key: 'eq.storefront',
+          limit: '1'
+        }
+      });
+      settingRow = settings?.[0] || null;
+      contextLoaded = true;
+      updatePdfCurrent();
+      setStatus('');
+    } finally {
+      contextLoading = false;
+    }
+  }
+
+  async function refreshProjectContext() {
+    try {
+      await loadProjectContext();
+    } catch (error) {
+      setStatus(error.message, true);
+      const current = document.querySelector('#catalog-pdf-admin-current');
+      if (current) current.innerHTML = '<span>No se pudo comprobar el PDF publicado.</span>';
+    }
   }
 
   async function uploadPdf() {
@@ -145,7 +174,9 @@
 
     try {
       setStatus('Subiendo el catálogo PDF…');
+      contextLoaded = false;
       await loadProjectContext();
+      if (!project) throw new Error('No se ha podido cargar el contexto de SAM.');
       await uploadStorage(PDF_PATH, file);
 
       const catalogPdf = {
@@ -182,6 +213,7 @@
       }
 
       settingRow = { key: 'storefront', value, is_public: true };
+      contextLoaded = true;
       updatePdfCurrent();
       input.value = '';
       document.querySelector('[data-catalog-pdf-admin-name]').textContent = 'Ningún archivo seleccionado';
@@ -216,7 +248,13 @@
   }
 
   function createPanel() {
-    if (document.querySelector('#catalog-pdf-admin-panel')) return;
+    if (!dashboardReady()) return;
+
+    const existingPanel = document.querySelector('#catalog-pdf-admin-panel');
+    if (existingPanel) {
+      if (!contextLoaded && !contextLoading) refreshProjectContext();
+      return;
+    }
 
     const dashboard = document.querySelector('#dashboard-view');
     const catalogPanel = dashboard?.querySelector('.catalog-panel');
@@ -275,20 +313,20 @@
       if (event.target === dialog) dialog.close();
     });
 
-    loadProjectContext().catch((error) => setStatus(error.message, true));
+    refreshProjectContext();
   }
 
   function initialize() {
-    createPanel();
     const dashboard = document.querySelector('#dashboard-view');
     if (!dashboard) return;
 
-    const observer = new MutationObserver(createPanel);
+    createPanel();
+    const observer = new MutationObserver(() => {
+      if (!dashboard.hidden) createPanel();
+    });
     observer.observe(dashboard, {
       attributes: true,
-      attributeFilter: ['hidden'],
-      childList: true,
-      subtree: true
+      attributeFilter: ['hidden']
     });
   }
 
