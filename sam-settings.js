@@ -3,7 +3,8 @@
 // No añadas aquí la clave service_role ni ninguna contraseña.
 const samConfig = Object.freeze({
   supabaseUrl: 'https://avboupigkstzprrgvlhr.supabase.co',
-  supabasePublishableKey: 'sb_publishable_eyFLhKFk9HXAab4q1cxG4A_-_la1-OI'
+  supabasePublishableKey: 'sb_publishable_eyFLhKFk9HXAab4q1cxG4A_-_la1-OI',
+  webVersion: '1.0.0'
 });
 
 window.SAM_CONFIG = samConfig;
@@ -144,6 +145,20 @@ function loadSamAsset(tagName, attributes) {
 
 const settingsScriptUrl = document.currentScript?.src || window.location.href;
 const isAdminPage = /\/admin(?:\/(?:index\.html)?)?$/.test(window.location.pathname);
+
+function showSamWebVersion() {
+  if (isAdminPage) return;
+  const footerBottom = document.querySelector('.footer-bottom');
+  if (!footerBottom || footerBottom.querySelector('[data-sam-version]')) return;
+
+  const version = document.createElement('p');
+  version.dataset.samVersion = '';
+  version.textContent = `Versión ${samConfig.webVersion}`;
+  version.title = 'Versión actual de la web';
+  footerBottom.append(version);
+}
+
+showSamWebVersion();
 
 if (isAdminPage) {
   // Confirmación visual del guardado de configuración.
