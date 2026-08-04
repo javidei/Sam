@@ -6,7 +6,7 @@ const samConfig = Object.freeze({
   supabasePublishableKey: 'sb_publishable_eyFLhKFk9HXAab4q1cxG4A_-_la1-OI',
   webVersion: '1.1.0',
   releaseDate: '2026-08-05',
-  releaseCommit: 'PENDING',
+  releaseCommit: '98efc56',
   environment: window.location.hostname.endsWith('github.io') ? 'production' : 'development'
 });
 
