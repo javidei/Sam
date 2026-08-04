@@ -132,17 +132,44 @@ window.setTimeout = function setTimeoutWithCommercePreference(callback, delay, .
   }, delay);
 };
 
-// Mejoras específicas del panel de administración. Se cargan desde aquí para mantener
-// el HTML del panel limpio y aplicar siempre la última versión de la confirmación visual.
-if (/\/admin(?:\/(?:index\.html)?)?$/.test(window.location.pathname)) {
-  const settingsScriptUrl = document.currentScript?.src || window.location.href;
-  const feedbackStyles = document.createElement('link');
-  feedbackStyles.rel = 'stylesheet';
-  feedbackStyles.href = new URL('admin/admin-feedback.css?v=sam-admin-feedback-1', settingsScriptUrl).toString();
-  document.head.append(feedbackStyles);
+function loadSamAsset(tagName, attributes) {
+  const element = document.createElement(tagName);
+  Object.entries(attributes).forEach(([key, value]) => {
+    if (key === 'textContent') element.textContent = value;
+    else element.setAttribute(key, value);
+  });
+  document.head.append(element);
+  return element;
+}
 
-  const feedbackScript = document.createElement('script');
-  feedbackScript.src = new URL('admin/admin-feedback.js?v=sam-admin-feedback-1', settingsScriptUrl).toString();
-  feedbackScript.async = false;
-  document.head.append(feedbackScript);
+const settingsScriptUrl = document.currentScript?.src || window.location.href;
+const isAdminPage = /\/admin(?:\/(?:index\.html)?)?$/.test(window.location.pathname);
+
+if (isAdminPage) {
+  // Confirmación visual del guardado de configuración.
+  loadSamAsset('link', {
+    rel: 'stylesheet',
+    href: new URL('admin/admin-feedback.css?v=sam-admin-feedback-1', settingsScriptUrl).toString()
+  });
+  loadSamAsset('script', {
+    src: new URL('admin/admin-feedback.js?v=sam-admin-feedback-1', settingsScriptUrl).toString()
+  });
+
+  // Importación masiva desde Excel y publicación del catálogo PDF.
+  loadSamAsset('link', {
+    rel: 'stylesheet',
+    href: new URL('admin/catalog-import.css?v=sam-catalog-import-1', settingsScriptUrl).toString()
+  });
+  loadSamAsset('script', {
+    src: new URL('admin/catalog-import.js?v=sam-catalog-import-1', settingsScriptUrl).toString()
+  });
+} else {
+  // Acceso público al catálogo PDF configurado desde Administración.
+  loadSamAsset('link', {
+    rel: 'stylesheet',
+    href: new URL('catalog-pdf.css?v=sam-catalog-pdf-1', settingsScriptUrl).toString()
+  });
+  loadSamAsset('script', {
+    src: new URL('catalog-pdf.js?v=sam-catalog-pdf-1', settingsScriptUrl).toString()
+  });
 }
