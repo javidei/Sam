@@ -1,4 +1,27 @@
 (() => {
+  function initializeAdminFooter() {
+    if (document.querySelector('.admin-footer')) return;
+
+    const version = String(window.SAM_CONFIG?.webVersion || '1.0.0');
+    const footer = document.createElement('footer');
+    footer.className = 'admin-footer';
+    footer.setAttribute('aria-label', 'Información del panel de administración');
+    footer.innerHTML = `
+      <div class="admin-footer-inner">
+        <div class="admin-footer-brand">
+          <strong>SAM</strong>
+          <span>Panel de administración</span>
+        </div>
+        <div class="admin-footer-meta">
+          <span class="admin-footer-version">Versión ${version}</span>
+          <span>Desarrollo: Javier Díaz</span>
+          <a href="../">Ver tienda <span aria-hidden="true">→</span></a>
+        </div>
+      </div>
+    `;
+    document.body.append(footer);
+  }
+
   function initializeAdminFeedback() {
     const form = document.querySelector('#storefront-form');
     const status = document.querySelector('#storefront-status');
@@ -150,9 +173,14 @@
     statusObserver.observe(status, { childList: true, subtree: true, characterData: true, attributes: true });
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeAdminFeedback, { once: true });
-  } else {
+  function initializeAdminPage() {
+    initializeAdminFooter();
     initializeAdminFeedback();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeAdminPage, { once: true });
+  } else {
+    initializeAdminPage();
   }
 })();
