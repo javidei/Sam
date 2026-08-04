@@ -2,6 +2,7 @@
   const THEME_KEY = 'sam-theme';
   let toastTimer = 0;
   let brandingRequest = 0;
+  const brandingObservers = [];
 
   function applyTheme(theme) {
     const normalizedTheme = theme === 'dark' ? 'dark' : 'light';
@@ -43,10 +44,29 @@
     applyTheme(document.documentElement.dataset.theme || localStorage.getItem(THEME_KEY));
   }
 
+  function isLocalLogoReference(value) {
+    return /(?:^|\/)assets\/logo\.svg(?:[?#]|$)/i.test(String(value || ''));
+  }
+
+  function protectDatabaseLogo(image) {
+    if (!image || image.dataset.databaseLogoProtected === 'true') return;
+    image.dataset.databaseLogoProtected = 'true';
+    const observer = new MutationObserver(() => {
+      const src = image.getAttribute('src');
+      if (!isLocalLogoReference(src)) return;
+      image.removeAttribute('data-bbdd-logo-ready');
+      image.removeAttribute('src');
+      image.style.visibility = 'hidden';
+    });
+    observer.observe(image, { attributes: true, attributeFilter: ['src'] });
+    brandingObservers.push(observer);
+  }
+
   function databaseBrandTargets() {
     const topbarLogo = document.querySelector('.topbar img[alt="SAM"]');
     const previewLogo = document.querySelector('#brand-logo-preview');
     if (topbarLogo) topbarLogo.dataset.brandLogo = '';
+    [topbarLogo, previewLogo].filter(Boolean).forEach(protectDatabaseLogo);
     return [topbarLogo, previewLogo].filter(Boolean);
   }
 
@@ -74,6 +94,7 @@
     targets.forEach((image) => {
       image.removeAttribute('data-bbdd-logo-ready');
       image.removeAttribute('src');
+      image.style.visibility = 'hidden';
     });
 
     const config = window.SAM_CONFIG || {};
@@ -129,10 +150,12 @@
         image.onerror = () => {
           image.removeAttribute('data-bbdd-logo-ready');
           image.removeAttribute('src');
+          image.style.visibility = 'hidden';
         };
         image.src = logoUrl;
         image.dataset.bbddLogoReady = 'true';
         image.dataset.logoSource = 'database';
+        image.style.visibility = '';
       });
 
       const favicon = document.querySelector('link[rel="icon"]');
@@ -153,10 +176,14 @@
     databaseBrandTargets().forEach((image) => {
       image.removeAttribute('data-bbdd-logo-ready');
       image.removeAttribute('src');
+      image.style.visibility = 'hidden';
     });
 
     input?.addEventListener('change', () => {
-      if (input.files?.[0] && preview) preview.dataset.bbddLogoReady = 'draft';
+      if (input.files?.[0] && preview) {
+        preview.dataset.bbddLogoReady = 'draft';
+        preview.style.visibility = '';
+      }
     });
 
     reset?.addEventListener('click', () => {
@@ -164,6 +191,7 @@
         if (!preview) return;
         preview.removeAttribute('data-bbdd-logo-ready');
         preview.removeAttribute('src');
+        preview.style.visibility = 'hidden';
       }, 0);
     });
 
