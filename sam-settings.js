@@ -4,7 +4,8 @@
 const samConfig = Object.freeze({
   supabaseUrl: 'https://avboupigkstzprrgvlhr.supabase.co',
   supabasePublishableKey: 'sb_publishable_eyFLhKFk9HXAab4q1cxG4A_-_la1-OI',
-  webVersion: '1.0.3'
+  webVersion: '1.0.4',
+  webReleaseDate: '05/08/2026'
 });
 
 window.SAM_CONFIG = samConfig;
@@ -12,9 +13,9 @@ window.SAM_CONFIG = samConfig;
 (() => {
   const isAdminPage = /\/admin(?:\/(?:index\.html)?)?$/.test(window.location.pathname);
 
-  // La pantalla de acceso debe depender únicamente de admin.js.
-  // Ninguna mejora opcional, consulta pública o personalización del escaparate se
-  // ejecuta antes de iniciar sesión, de modo que un fallo externo no pueda bloquearla.
+  // Administración solo recibe la configuración anterior. Sus mejoras visuales y el
+  // gestor del PDF se cargan después de admin.js desde admin/index.html para que nunca
+  // puedan bloquear la pantalla de acceso.
   if (isAdminPage) return;
 
   const nativeSetTimeout = window.setTimeout.bind(window);
@@ -140,8 +141,8 @@ window.SAM_CONFIG = samConfig;
 
     const version = document.createElement('p');
     version.dataset.samVersion = '';
-    version.textContent = `Versión ${samConfig.webVersion}`;
-    version.title = 'Versión actual de la web';
+    version.textContent = `Versión ${samConfig.webVersion} · ${samConfig.webReleaseDate}`;
+    version.title = 'Versión y fecha de publicación de la web';
     footerBottom.append(version);
   }
 
@@ -150,9 +151,9 @@ window.SAM_CONFIG = samConfig;
 
   loadSamAsset('link', {
     rel: 'stylesheet',
-    href: new URL('catalog-pdf.css?v=sam-catalog-pdf-3', settingsScriptUrl).toString()
+    href: new URL('catalog-pdf.css?v=sam-catalog-pdf-4', settingsScriptUrl).toString()
   });
   loadSamAsset('script', {
-    src: new URL('catalog-pdf.js?v=sam-catalog-pdf-3', settingsScriptUrl).toString()
+    src: new URL('catalog-pdf.js?v=sam-catalog-pdf-4', settingsScriptUrl).toString()
   });
 })();
