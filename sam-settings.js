@@ -4,7 +4,10 @@
 const samConfig = Object.freeze({
   supabaseUrl: 'https://avboupigkstzprrgvlhr.supabase.co',
   supabasePublishableKey: 'sb_publishable_eyFLhKFk9HXAab4q1cxG4A_-_la1-OI',
-  webVersion: '1.0.1'
+  webVersion: '1.1.0',
+  releaseDate: '2026-08-05',
+  releaseCommit: 'PENDING',
+  environment: window.location.hostname.endsWith('github.io') ? 'production' : 'development'
 });
 
 window.SAM_CONFIG = samConfig;
@@ -60,8 +63,6 @@ async function prepareStorefrontBranding() {
   const logos = [...document.querySelectorAll('[data-brand-logo]')];
   if (!logos.length) return;
 
-  // Conservamos el espacio del logo para que la cabecera no salte, pero ocultamos el
-  // SVG antiguo hasta conocer y precargar el logo configurado en Supabase.
   logos.forEach((image) => {
     image.style.visibility = 'hidden';
   });
@@ -153,38 +154,55 @@ function showSamWebVersion() {
 
   const version = document.createElement('p');
   version.dataset.samVersion = '';
-  version.textContent = `Versión ${samConfig.webVersion}`;
-  version.title = 'Versión actual de la web';
+  const releaseDate = new Date(`${samConfig.releaseDate}T12:00:00`);
+  const releaseDateLabel = Number.isNaN(releaseDate.getTime())
+    ? samConfig.releaseDate
+    : new Intl.DateTimeFormat('es-ES').format(releaseDate);
+  version.textContent = `Versión ${samConfig.webVersion} · ${releaseDateLabel}`;
+  version.title = `Commit de publicación: ${samConfig.releaseCommit}`;
   footerBottom.append(version);
 }
 
 showSamWebVersion();
 
 if (isAdminPage) {
-  // Confirmación visual, footer y estado del guardado de configuración.
   loadSamAsset('link', {
     rel: 'stylesheet',
-    href: new URL('admin/admin-feedback.css?v=sam-admin-feedback-2', settingsScriptUrl).toString()
+    href: new URL('admin/admin-feedback.css?v=sam-admin-feedback-3', settingsScriptUrl).toString()
   });
   loadSamAsset('script', {
-    src: new URL('admin/admin-feedback.js?v=sam-admin-feedback-2', settingsScriptUrl).toString()
+    src: new URL('admin/admin-feedback.js?v=sam-admin-feedback-3', settingsScriptUrl).toString()
   });
 
-  // Publicación manual del catálogo PDF. La importación desde Excel está desactivada.
   loadSamAsset('link', {
     rel: 'stylesheet',
-    href: new URL('admin/catalog-pdf-admin.css?v=sam-catalog-pdf-admin-1', settingsScriptUrl).toString()
+    href: new URL('admin/catalog-pdf-admin.css?v=sam-catalog-pdf-admin-2', settingsScriptUrl).toString()
   });
   loadSamAsset('script', {
-    src: new URL('admin/catalog-pdf-admin.js?v=sam-catalog-pdf-admin-1', settingsScriptUrl).toString()
+    src: new URL('admin/catalog-pdf-admin.js?v=sam-catalog-pdf-admin-2', settingsScriptUrl).toString()
+  });
+
+  loadSamAsset('link', {
+    rel: 'stylesheet',
+    href: new URL('admin/admin-modules.css?v=sam-admin-modules-1', settingsScriptUrl).toString()
+  });
+  loadSamAsset('script', {
+    src: new URL('admin/admin-modules.js?v=sam-admin-modules-1', settingsScriptUrl).toString()
   });
 } else {
-  // Acceso público al catálogo PDF configurado desde Administración.
   loadSamAsset('link', {
     rel: 'stylesheet',
-    href: new URL('catalog-pdf.css?v=sam-catalog-pdf-1', settingsScriptUrl).toString()
+    href: new URL('catalog-pdf.css?v=sam-catalog-pdf-2', settingsScriptUrl).toString()
   });
   loadSamAsset('script', {
-    src: new URL('catalog-pdf.js?v=sam-catalog-pdf-1', settingsScriptUrl).toString()
+    src: new URL('catalog-pdf.js?v=sam-catalog-pdf-2', settingsScriptUrl).toString()
+  });
+
+  loadSamAsset('link', {
+    rel: 'stylesheet',
+    href: new URL('site-quality.css?v=sam-site-quality-1', settingsScriptUrl).toString()
+  });
+  loadSamAsset('script', {
+    src: new URL('site-quality.js?v=sam-site-quality-1', settingsScriptUrl).toString()
   });
 }
