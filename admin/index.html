@@ -7,11 +7,11 @@
   <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#262329">
   <link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="admin.css?v=sam-admin-9">
+  <link rel="stylesheet" href="admin.css?v=sam-admin-core-10">
 </head>
 <body>
   <header class="topbar">
-    <a href="../" aria-label="Volver a SAM"><img src="../assets/logo.svg" alt="SAM" width="150" height="72" data-brand-logo></a>
+    <a href="../" aria-label="Volver a SAM"><img src="../assets/logo.svg" alt="SAM" width="150" height="72"></a>
     <div class="topbar-actions">
       <span id="session-user" hidden></span>
       <button id="logout-button" class="text-button" type="button" hidden>Cerrar sesión</button>
@@ -173,7 +173,9 @@
       <p id="product-form-status" class="form-status" role="status"></p>
     </form>
   </dialog>
-  <script src="../sam-settings.js?v=sam-admin-8"></script>
-  <script src="admin.js?v=sam-admin-9"></script>
+
+  <noscript><p class="form-status is-error">Necesitas activar JavaScript para acceder al panel.</p></noscript>
+  <script src="../sam-settings.js?v=sam-admin-core-10"></script>
+  <script src="admin.js?v=sam-admin-core-10"></script>
 </body>
 </html>
