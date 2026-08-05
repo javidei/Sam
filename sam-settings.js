@@ -4,7 +4,7 @@
 const samConfig = Object.freeze({
   supabaseUrl: 'https://avboupigkstzprrgvlhr.supabase.co',
   supabasePublishableKey: 'sb_publishable_eyFLhKFk9HXAab4q1cxG4A_-_la1-OI',
-  webVersion: '1.0.5',
+  webVersion: '1.0.6',
   webReleaseDate: '05/08/2026'
 });
 
@@ -37,7 +37,7 @@ window.SAM_CONFIG = samConfig;
 
   loadSamAsset('link', {
     rel: 'stylesheet',
-    href: new URL('theme.css?v=sam-theme-1', settingsScriptUrl).toString()
+    href: new URL('theme.css?v=sam-theme-2', settingsScriptUrl).toString()
   });
 
   function applyTheme(theme) {
