@@ -4,7 +4,7 @@
 const samConfig = Object.freeze({
   supabaseUrl: 'https://avboupigkstzprrgvlhr.supabase.co',
   supabasePublishableKey: 'sb_publishable_eyFLhKFk9HXAab4q1cxG4A_-_la1-OI',
-  webVersion: '1.0.6',
+  webVersion: '0.6.1',
   webReleaseDate: '05/08/2026'
 });
 
